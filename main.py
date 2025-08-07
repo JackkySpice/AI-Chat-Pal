@@ -13,7 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("AIChatPalBot")
+logger = logging.getLogger("AIChatPalWeb")
 
 # Globals lazily initialized
 _DB_CLIENT = None  # type: ignore[var-annotated]
@@ -35,8 +35,7 @@ FREE_DAILY_LIMIT = 3
 HISTORY_MAX_MESSAGES = 20
 NEW_CHAT_PROMPT_MINUTES = 5
 THINKING_PLACEHOLDER = "Thinking…"
-TELEGRAM_CHUNK_LIMIT = 4000
-LOCK_FILE = "bot.lock"
+LOCK_FILE = "bot.lock"  # no longer used, kept for compatibility
 
 
 def _log_admin(msg: str) -> None:
@@ -252,18 +251,6 @@ def _logout_key(user_id: int) -> bool:
         return False
 
 
-def _chunk_text(text: str, limit: int = TELEGRAM_CHUNK_LIMIT) -> List[str]:
-    chunks: List[str] = []
-    pos = 0
-    n = len(text)
-    while pos < n:
-        chunks.append(text[pos : pos + limit])
-        pos += limit
-    if not chunks:
-        chunks = [""]
-    return chunks
-
-
 def _build_gemini_contents(conversation_history: List[Dict[str, Any]], latest_user_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
     contents: List[Dict[str, Any]] = []
     for msg in conversation_history[-HISTORY_MAX_MESSAGES:]:
@@ -353,7 +340,7 @@ def _stream_gemini_response(contents: List[Dict[str, Any]]) -> Tuple[Optional[st
         cfg = {"system_instruction": system_prompt} if system_prompt else None
 
     try:
-        # Prefer streaming
+        # Prefer streaming (aggregated server-side for now)
         stream = client.models.generate_content_stream(
             model=model, contents=contents, config=cfg
         )
@@ -381,109 +368,274 @@ def _stream_gemini_response(contents: List[Dict[str, Any]]) -> Tuple[Optional[st
         return None, err
 
 
-def _send_large_message(context: Any, chat_id: int, text: str, placeholder_message: Any) -> None:
-    try:
-        chunks = _chunk_text(text)
-        # Edit placeholder with the first chunk
-        first = chunks[0]
-        context.bot.edit_message_text(
-            chat_id=chat_id, message_id=placeholder_message.message_id, text=first
-        )
-        # Send remaining chunks
-        for extra in chunks[1:]:
-            context.bot.send_message(chat_id=chat_id, text=extra)
-    except Exception as e:
-        _log_admin(f"Failed to send large message: {e}")
+# -------------------------- Web App --------------------------
+from flask import Flask, request, jsonify, make_response, Response
+import secrets
 
 
-def _should_ask_new_chat(history: List[Dict[str, Any]]) -> bool:
-    if not history:
-        return False
-    last_ts = history[-1].get("timestamp")
-    if not isinstance(last_ts, datetime):
-        return False
-    now = datetime.now(timezone.utc)
-    return (now - last_ts) > timedelta(minutes=NEW_CHAT_PROMPT_MINUTES)
+HTML_INDEX = """
+<!doctype html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"utf-8\"> 
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> 
+  <title>AIChatPal</title>
+  <script src=\"https://cdn.tailwindcss.com\"></script>
+  <style>
+    .msg { max-width: 80%; }
+    .scroll-area { height: calc(100vh - 200px); }
+  </style>
+</head>
+<body class=\"bg-gray-50 text-gray-900\">
+  <div class=\"min-h-screen flex flex-col\">
+    <header class=\"bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-4 shadow\">
+      <div class=\"max-w-3xl mx-auto flex items-center justify-between\">
+        <h1 class=\"text-xl font-bold\">AIChatPal</h1>
+        <div class=\"flex gap-2\">
+          <button id=\"newChatBtn\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">New chat</button>
+          <button id=\"keyBtn\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">Activate key</button>
+        </div>
+      </div>
+    </header>
+
+    <main class=\"flex-1\">
+      <div class=\"max-w-3xl mx-auto p-4\">
+        <div id=\"chat\" class=\"scroll-area overflow-y-auto rounded-lg border bg-white p-3 space-y-3 shadow\"></div>
+        <div class=\"mt-4 flex items-end gap-2\">
+          <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"flex-1 rounded border p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500\"></textarea>
+          <button id=\"send\" class=\"h-12 px-5 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50\">Send</button>
+        </div>
+        <p id=\"limit\" class=\"text-sm text-gray-500 mt-2\"></p>
+      </div>
+    </main>
+
+    <footer class=\"text-center text-xs text-gray-500 py-4\">Powered by Gemini</footer>
+  </div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const newChatBtn = document.getElementById('newChatBtn');
+const keyBtn = document.getElementById('keyBtn');
+const limitP = document.getElementById('limit');
+
+function renderMessage(role, content) {
+  const row = document.createElement('div');
+  row.className = 'w-full flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+  const bubble = document.createElement('div');
+  bubble.className = 'msg rounded-2xl px-4 py-2 shadow ' + (role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100');
+  bubble.textContent = content;
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function renderThinking() {
+  const row = document.createElement('div');
+  row.className = 'w-full flex justify-start';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg rounded-2xl px-4 py-2 shadow bg-gray-100 italic text-gray-500';
+  bubble.textContent = 'Thinking…';
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return row;
+}
+
+async function loadHistory() {
+  const res = await fetch('/api/history');
+  const data = await res.json();
+  chat.innerHTML = '';
+  (data.history || []).forEach(m => renderMessage(m.role, m.content));
+  if (data.left !== undefined) {
+    if (data.left < 0) {
+      limitP.textContent = '';
+    } else {
+      limitP.textContent = `Free messages left today: ${data.left}`;
+    }
+  }
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  renderMessage('user', text);
+  sendBtn.disabled = true;
+  const thinkingNode = renderThinking();
+  try {
+    const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
+    const data = await res.json();
+    thinkingNode.remove();
+    if (data.error) {
+      renderMessage('assistant', `Error: ${data.error}`);
+    } else {
+      renderMessage('assistant', data.reply || '(No response)');
+      if (data.left !== undefined) {
+        if (data.left < 0) { limitP.textContent = ''; } else { limitP.textContent = `Free messages left today: ${data.left}`; }
+      }
+    }
+  } catch(e) {
+    thinkingNode.remove();
+    renderMessage('assistant', 'Network error.');
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
+newChatBtn.addEventListener('click', async () => {
+  await fetch('/api/newchat', {method: 'POST'});
+  await loadHistory();
+});
+keyBtn.addEventListener('click', async () => {
+  const key = prompt('Enter your key:');
+  if (!key) return;
+  const res = await fetch('/api/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
+  const data = await res.json();
+  if (data.ok) {
+    alert('Key activated!');
+  } else {
+    alert(data.error || 'Invalid key');
+  }
+});
+
+loadHistory();
+</script>
+</body>
+</html>
+"""
 
 
-def _start_web_server_background() -> Thread:
-    def run_flask():
+def _create_flask_app() -> Flask:
+    app = Flask(__name__)
+    # Secret key for cookies
+    app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev_secret_change_me")
+
+    def _get_or_create_user_id() -> Tuple[int, Optional[Response]]:
+        uid_cookie = request.cookies.get("uid")
+        response: Optional[Response] = None
         try:
-            from flask import Flask
+            if uid_cookie is None:
+                import secrets as _secrets
+                uid_val = _secrets.randbits(63)
+                response = make_response()
+                response.set_cookie(
+                    "uid",
+                    str(uid_val),
+                    max_age=60*60*24*365,
+                    httponly=True,
+                    samesite="Lax",
+                )
+                return int(uid_val), response
+            else:
+                return int(uid_cookie), None
+        except Exception:
+            # Fallback generate if cookie corrupted
+            import secrets as _secrets
+            uid_val = _secrets.randbits(63)
+            response = make_response()
+            response.set_cookie(
+                "uid",
+                str(uid_val),
+                max_age=60*60*24*365,
+                httponly=True,
+                samesite="Lax",
+            )
+            return int(uid_val), response
 
-            app = Flask(__name__)
+    def _free_left(user_id: int) -> int:
+        if _has_active_key(user_id):
+            return -1
+        used = _get_message_count(user_id)
+        left = max(0, FREE_DAILY_LIMIT - used)
+        return left
 
-            @app.route("/")
-            def index():
-                return "Hello, world!"
+    @app.get("/")
+    def index() -> Response:
+        user_id, resp = _get_or_create_user_id()
+        if resp is None:
+            return Response(HTML_INDEX, mimetype="text/html")
+        resp.set_data(HTML_INDEX)
+        resp.mimetype = "text/html"
+        return resp
 
-            # Suppress werkzeug noisy logs in production
-            log = logging.getLogger("werkzeug")
-            log.setLevel(logging.WARNING)
+    @app.get("/api/history")
+    def api_history():
+        user_id, resp = _get_or_create_user_id()
+        history = load_conversation_history(user_id)
+        payload = {
+            "history": [{"role": m.get("role"), "content": m.get("content")} for m in history],
+            "left": _free_left(user_id),
+        }
+        if resp is None:
+            return jsonify(payload)
+        resp.set_data(json.dumps(payload))
+        resp.mimetype = "application/json"
+        return resp
 
-            port = int(os.getenv("PORT", "8080"))
-            app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
-        except Exception as e:
-            _log_admin(f"Flask server failed: {e}")
-
-    t = Thread(target=run_flask, name="flask-server", daemon=True)
-    t.start()
-    _log_admin("Flask server started on 0.0.0.0:8080")
-    return t
-
-
-def _run_bot() -> None:
-    # Import telegram-bot libs lazily to keep import main lightweight
-    try:
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-        from telegram.ext import (
-            Updater,
-            CommandHandler,
-            MessageHandler,
-            Filters,
-            CallbackQueryHandler,
-            CallbackContext,
-        )
-    except Exception as e:
-        _log_admin(f"python-telegram-bot import failed: {e}")
-        return
-
-    # Handlers
-    def start(update, context: CallbackContext):
-        update.message.reply_text(
-            "Welcome to AIChatPalBot! Use /help to see available commands."
-        )
-
-    def help_command(update, context: CallbackContext):
-        help_text = (
-            "Commands:\n"
-            "/start - Welcome message\n"
-            "/help - Show this help\n"
-            "/key <your_key> - Activate unlimited access until key expiry\n"
-            "/newchat - Start a new conversation\n"
-            "/refresh - Refresh caches and connections\n"
-            "/logout - Remove active key\n"
-            "/adminJackLogs - Admin only\n"
-            "Free users get 3 messages/day."
-        )
-        update.message.reply_text(help_text)
-
-    def refresh(update, context: CallbackContext):
-        global _GEMINI_CLIENT
-        _GEMINI_CLIENT = None
-        load_conversation_history.cache_clear()
-        update.message.reply_text("Refreshed.")
-
-    def newchat(update, context: CallbackContext):
-        user_id = update.effective_user.id
+    @app.post("/api/newchat")
+    def api_newchat():
+        user_id, _ = _get_or_create_user_id()
         _save_conversation_history(user_id, [])
-        update.message.reply_text("Started a new chat.")
+        return jsonify({"ok": True})
 
-    def admin_logs(update, context: CallbackContext):
-        user = update.effective_user
-        if not user or (user.username != ADMIN_USERNAME):
-            update.message.reply_text("Unauthorized.")
-            return
+    @app.post("/api/key")
+    def api_key():
+        user_id, _ = _get_or_create_user_id()
+        try:
+            from keys import DEMO_KEYS
+        except Exception:
+            DEMO_KEYS = {}
+        data = request.get_json(silent=True) or {}
+        provided = str(data.get("key", "")).strip()
+        if not provided:
+            return jsonify({"ok": False, "error": "Missing key"}), 400
+        valid_until = DEMO_KEYS.get(provided)
+        if not valid_until:
+            return jsonify({"ok": False, "error": "Invalid key"}), 400
+        _set_active_key(user_id, provided, valid_until)
+        return jsonify({"ok": True, "valid_until": valid_until.isoformat()})
+
+    @app.post("/api/chat")
+    def api_chat():
+        user_id, _ = _get_or_create_user_id()
+        data = request.get_json(silent=True) or {}
+        text = str(data.get("message", "")).strip()
+        if not text:
+            return jsonify({"error": "Empty message"}), 400
+
+        # Rate limit for free users
+        if not _has_active_key(user_id):
+            current = _get_message_count(user_id)
+            if current >= FREE_DAILY_LIMIT:
+                return jsonify({"error": "Daily free limit reached (3/day). Use a key to unlock unlimited.", "left": 0}), 429
+            _increment_message_count(user_id)
+
+        history = load_conversation_history(user_id)
+        now = datetime.now(timezone.utc)
+        history.append({"role": "user", "content": text, "timestamp": now})
+
+        contents = _build_gemini_contents(history)
+        reply_text, err = _stream_gemini_response(contents)
+        if err or not reply_text:
+            err_text = err or "Unknown error"
+            return jsonify({"error": err_text, "left": _free_left(user_id)})
+
+        history.append({
+            "role": "assistant",
+            "content": reply_text,
+            "timestamp": datetime.now(timezone.utc),
+        })
+        _save_conversation_history(user_id, history)
+
+        return jsonify({"reply": reply_text, "left": _free_left(user_id)})
+
+    # Optional admin logs endpoint (no auth in web demo)
+    @app.get("/adminJackLogs")
+    def admin_logs():
         try:
             col_users, col_history, col_keys = _get_db_collections()
             users_count = col_users.count_documents({})
@@ -496,204 +648,22 @@ def _run_bot() -> None:
             f"DB: users={users_count}, history={history_count}, keys_in_use={keys_count}\n\n"
             f"Recent logs:\n{tail}"
         )
-        update.message.reply_text(msg)
+        return Response(msg, mimetype="text/plain")
 
-    def logout(update, context: CallbackContext):
-        user_id = update.effective_user.id
-        removed = _logout_key(user_id)
-        if removed:
-            update.message.reply_text("Key removed.")
-        else:
-            update.message.reply_text("No active key to remove.")
+    # Daily reset job: naive timer loop if desired (skipped; relies on external cron in prod)
 
-    def key(update, context: CallbackContext):
-        # /key <your_key>
-        try:
-            from keys import DEMO_KEYS
-        except Exception:
-            DEMO_KEYS = {}
-        args = context.args or []
-        if not args:
-            update.message.reply_text("Usage: /key <your_key>")
-            return
-        provided = args[0].strip()
-        valid_until = DEMO_KEYS.get(provided)
-        if not valid_until:
-            update.message.reply_text("Invalid key.")
-            return
-        user_id = update.effective_user.id
-        _set_active_key(user_id, provided, valid_until)
-        update.message.reply_text(
-            f"Key activated. Valid until: {valid_until.isoformat()}"
-        )
-
-    def _rate_limited(user_id: int) -> bool:
-        if _has_active_key(user_id):
-            return False
-        # Free user
-        current = _get_message_count(user_id)
-        if current >= FREE_DAILY_LIMIT:
-            return True
-        # Increment now to count this attempt
-        _increment_message_count(user_id)
-        return False
-
-    def ask_for_new_chat(update, context: CallbackContext, pending_text: str):
-        kb = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("Yes", callback_data="yes_newchat"),
-                InlineKeyboardButton("No, continue", callback_data="no_continue"),
-            ]
-        ])
-        context.user_data["pending_prompt"] = pending_text
-        update.message.reply_text(
-            "It has been a while. Start a new chat?", reply_markup=kb
-        )
-
-    def button(update, context: CallbackContext):
-        query = update.callback_query
-        user_id = query.from_user.id
-        data = query.data or ""
-        query.answer()
-        if data == "yes_newchat":
-            _save_conversation_history(user_id, [])
-            context.user_data.pop("pending_prompt", None)
-            query.edit_message_text("Started a new chat. Send your message again.")
-        elif data == "no_continue":
-            # Continue with pending prompt if any
-            pending = context.user_data.pop("pending_prompt", None)
-            if pending:
-                # Simulate as if user just sent it
-                class FakeMsg:
-                    def __init__(self, chat_id, message_id):
-                        self.chat_id = chat_id
-                        self.message_id = message_id
-                # We can't reuse the same message, just instruct user
-                query.edit_message_text("Okay, continuing. Processing your last message…")
-                _process_user_message(query.message.chat_id, user_id, pending, context)
-            else:
-                query.edit_message_text("Okay, continuing.")
-        else:
-            query.edit_message_text("Unknown action.")
-
-    def _process_user_message(chat_id: int, user_id: int, text: str, context: CallbackContext):
-        if _rate_limited(user_id):
-            context.bot.send_message(
-                chat_id=chat_id,
-                text=(
-                    "Daily free limit reached (3/day). Use /key to unlock unlimited access."
-                ),
-            )
-            return
-
-        history = load_conversation_history(user_id)
-        now = datetime.now(timezone.utc)
-        history.append({"role": "user", "content": text, "timestamp": now})
-
-        # Prepare and send placeholder
-        placeholder = context.bot.send_message(chat_id=chat_id, text=THINKING_PLACEHOLDER)
-
-        # Call Gemini
-        contents = _build_gemini_contents(history)
-        reply_text, err = _stream_gemini_response(contents)
-        if err or not reply_text:
-            err_text = err or "Unknown error"
-            try:
-                context.bot.edit_message_text(
-                    chat_id=chat_id,
-                    message_id=placeholder.message_id,
-                    text=f"Error: {err_text}",
-                )
-            except Exception:
-                context.bot.send_message(chat_id=chat_id, text=f"Error: {err_text}")
-            return
-
-        # Save assistant message and persist history
-        history.append({
-            "role": "assistant",
-            "content": reply_text,
-            "timestamp": datetime.now(timezone.utc),
-        })
-        _save_conversation_history(user_id, history)
-
-        # Send final text, chunked; edit the placeholder for first chunk
-        _send_large_message(context, chat_id, reply_text, placeholder)
-
-    def respond(update, context: CallbackContext):
-        if not update.message or not update.message.text:
-            return
-        user_id = update.effective_user.id
-        text = update.message.text
-        history = load_conversation_history(user_id)
-        if _should_ask_new_chat(history):
-            ask_for_new_chat(update, context, text)
-            return
-        _process_user_message(update.message.chat_id, user_id, text, context)
-
-    def reset_daily_limit(context: CallbackContext):
-        _reset_all_message_counts()
-
-    token = os.getenv("TELEGRAM_TOKEN")
-    if not token:
-        _log_admin("TELEGRAM_TOKEN not set. Bot will not start.")
-        return
-
-    # Single-instance guard
-    if os.path.exists(LOCK_FILE):
-        _log_admin("bot.lock exists. Another instance may be running. Exiting.")
-        return
-
-    with open(LOCK_FILE, "w") as f:
-        f.write(f"PID={os.getpid()}\nSTART={datetime.now(timezone.utc).isoformat()}\n")
-
-    updater = None
-    try:
-        updater = Updater(token=token, use_context=True)
-        dp = updater.dispatcher
-
-        # Register handlers
-        dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(CommandHandler("help", help_command))
-        dp.add_handler(CommandHandler("refresh", refresh))
-        dp.add_handler(CommandHandler("newchat", newchat))
-        dp.add_handler(CommandHandler("logout", logout))
-        dp.add_handler(CommandHandler("key", key, pass_args=True))
-        dp.add_handler(CommandHandler("adminJackLogs", admin_logs))
-        dp.add_handler(CallbackQueryHandler(button))
-        dp.add_handler(MessageHandler(Filters.text & ~Filters.command, respond))
-
-        # Schedule daily reset at 00:00 server time
-        try:
-            local_midnight = dtime(hour=0, minute=0)  # server local time
-            updater.job_queue.run_daily(lambda ctx: reset_daily_limit(ctx), time=local_midnight)
-        except Exception as e:
-            _log_admin(f"Failed to schedule daily reset: {e}")
-
-        _log_admin("Starting bot polling…")
-        updater.start_polling(clean=True)
-        updater.idle()
-    finally:
-        try:
-            if os.path.exists(LOCK_FILE):
-                os.remove(LOCK_FILE)
-        except Exception:
-            pass
+    return app
 
 
 def main() -> None:
-    # Start Flask first
-    flask_thread = _start_web_server_background()
+    app = _create_flask_app()
+    # Suppress werkzeug noisy logs in production
+    log = logging.getLogger("werkzeug")
+    log.setLevel(logging.WARNING)
 
-    # Start bot if token present
-    if os.getenv("TELEGRAM_TOKEN"):
-        _run_bot()
-    else:
-        _log_admin("Running Flask only (no TELEGRAM_TOKEN provided)")
-        # Keep process alive by joining Flask thread
-        try:
-            flask_thread.join()
-        except KeyboardInterrupt:
-            pass
+    port = int(os.getenv("PORT", "8080"))
+    _log_admin("Starting Flask web server…")
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 
 if __name__ == "__main__":
