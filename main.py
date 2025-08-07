@@ -22,6 +22,7 @@ _DB_NAME = "chat_history_db"
 _COL_USERS = None
 _COL_HISTORY = None
 _COL_KEYS_IN_USE = None
+_COL_CONVERSATIONS = None
 _GEMINI_CLIENT = None  # type: ignore[var-annotated]
 
 # Simple in-memory rolling logs for /adminJackLogs
@@ -69,13 +70,21 @@ def _safe_import_mongomock() -> Optional[Any]:
 def _ensure_indexes(db: Any) -> None:
     try:
         db["history"].create_index("user_id")
+        try:
+            db["history"].create_index("conversation_id")
+        except Exception:
+            pass
+        try:
+            db["conversations"].create_index([("user_id", 1), ("updated_at", -1)])
+        except Exception:
+            pass
     except Exception as e:
         _log_admin(f"Index creation failed: {e}")
 
 
 def _create_mongo_client() -> Tuple[Any, bool]:
     """Return (client, is_mock). Fallback transparently to mongomock if needed."""
-    global _DB_CLIENT, _DB_IS_MOCK, _COL_USERS, _COL_HISTORY, _COL_KEYS_IN_USE
+    global _DB_CLIENT, _DB_IS_MOCK, _COL_USERS, _COL_HISTORY, _COL_KEYS_IN_USE, _COL_CONVERSATIONS
 
     if _DB_CLIENT is not None:
         return _DB_CLIENT, _DB_IS_MOCK
@@ -94,6 +103,7 @@ def _create_mongo_client() -> Tuple[Any, bool]:
             _COL_USERS = db["users"]
             _COL_HISTORY = db["history"]
             _COL_KEYS_IN_USE = db["keys_in_use"]
+            _COL_CONVERSATIONS = db["conversations"]
             _ensure_indexes(db)
             _log_admin("Connected to MongoDB")
             return _DB_CLIENT, _DB_IS_MOCK
@@ -108,6 +118,7 @@ def _create_mongo_client() -> Tuple[Any, bool]:
         _COL_USERS = db["users"]
         _COL_HISTORY = db["history"]
         _COL_KEYS_IN_USE = db["keys_in_use"]
+        _COL_CONVERSATIONS = db["conversations"]
         _ensure_indexes(db)
         _log_admin("Using in-memory mongomock database")
         return _DB_CLIENT, _DB_IS_MOCK
@@ -116,22 +127,28 @@ def _create_mongo_client() -> Tuple[Any, bool]:
     raise RuntimeError("No database backend available (mongomock missing and MongoDB unreachable)")
 
 
-def _get_db_collections() -> Tuple[Any, Any, Any]:
-    global _COL_USERS, _COL_HISTORY, _COL_KEYS_IN_USE
-    if _COL_USERS is None or _COL_HISTORY is None or _COL_KEYS_IN_USE is None:
+def _get_db_collections() -> Tuple[Any, Any, Any, Any]:
+    global _COL_USERS, _COL_HISTORY, _COL_KEYS_IN_USE, _COL_CONVERSATIONS
+    if _COL_USERS is None or _COL_HISTORY is None or _COL_KEYS_IN_USE is None or _COL_CONVERSATIONS is None:
         _create_mongo_client()
-    return _COL_USERS, _COL_HISTORY, _COL_KEYS_IN_USE
+    return _COL_USERS, _COL_HISTORY, _COL_KEYS_IN_USE, _COL_CONVERSATIONS
 
 
 @lru_cache(maxsize=4096)
-def load_conversation_history(user_id: int) -> List[Dict[str, Any]]:
-    """Load conversation history for a user. Returns a new list copy.
+def load_conversation_history(user_id: int, conversation_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Load conversation history for a user and conversation. Returns a new list copy.
 
     The result is cached. Clear the entire cache after updates.
     """
     try:
-        _, col_history, _ = _get_db_collections()
-        doc = col_history.find_one({"user_id": user_id})
+        _, col_history, _, _ = _get_db_collections()
+        query: Dict[str, Any] = {"user_id": user_id}
+        if conversation_id is not None:
+            query["conversation_id"] = conversation_id
+        doc = col_history.find_one(query)
+        if not doc and conversation_id is not None:
+            # Fallback to legacy single-history doc
+            doc = col_history.find_one({"user_id": user_id, "conversation_id": {"$exists": False}})
         if not doc:
             return []
         history = doc.get("conversation_history", [])
@@ -159,13 +176,16 @@ def load_conversation_history(user_id: int) -> List[Dict[str, Any]]:
         return []
 
 
-def _save_conversation_history(user_id: int, history: List[Dict[str, Any]]) -> None:
+def _save_conversation_history(user_id: int, history: List[Dict[str, Any]], conversation_id: Optional[str] = None) -> None:
     try:
         history = history[-HISTORY_MAX_MESSAGES:]
-        col_users, col_history, _ = _get_db_collections()
+        col_users, col_history, _, _ = _get_db_collections()
+        update_filter: Dict[str, Any] = {"user_id": user_id}
+        if conversation_id is not None:
+            update_filter["conversation_id"] = conversation_id
         col_history.update_one(
-            {"user_id": user_id},
-            {"$set": {"user_id": user_id, "conversation_history": history}},
+            update_filter,
+            {"$set": {"user_id": user_id, "conversation_id": conversation_id, "conversation_history": history}},
             upsert=True,
         )
         load_conversation_history.cache_clear()
@@ -175,7 +195,7 @@ def _save_conversation_history(user_id: int, history: List[Dict[str, Any]]) -> N
 
 def _increment_message_count(user_id: int) -> int:
     try:
-        col_users, _, _ = _get_db_collections()
+        col_users, _, _, _ = _get_db_collections()
         doc = col_users.find_one({"user_id": user_id})
         current = int(doc.get("message_count", 0)) if doc else 0
         new_count = current + 1
@@ -192,7 +212,7 @@ def _increment_message_count(user_id: int) -> int:
 
 def _get_message_count(user_id: int) -> int:
     try:
-        col_users, _, _ = _get_db_collections()
+        col_users, _, _, _ = _get_db_collections()
         doc = col_users.find_one({"user_id": user_id})
         return int(doc.get("message_count", 0)) if doc else 0
     except Exception:
@@ -201,7 +221,7 @@ def _get_message_count(user_id: int) -> int:
 
 def _reset_all_message_counts() -> None:
     try:
-        col_users, _, _ = _get_db_collections()
+        col_users, _, _, _ = _get_db_collections()
         col_users.update_many({}, {"$set": {"message_count": 0}})
         _log_admin("Daily message counts reset to 0 for all users")
     except Exception as e:
@@ -210,7 +230,7 @@ def _reset_all_message_counts() -> None:
 
 def _has_active_key(user_id: int) -> bool:
     try:
-        _, _, col_keys = _get_db_collections()
+        _, _, col_keys, _ = _get_db_collections()
         now = datetime.now(timezone.utc)
         doc = col_keys.find_one({"user_id": user_id})
         if not doc:
@@ -231,7 +251,7 @@ def _has_active_key(user_id: int) -> bool:
 
 def _set_active_key(user_id: int, key: str, valid_until: datetime) -> None:
     try:
-        _, _, col_keys = _get_db_collections()
+        _, _, col_keys, _ = _get_db_collections()
         col_keys.update_one(
             {"user_id": user_id},
             {"$set": {"user_id": user_id, "key": key, "valid_until": valid_until}},
@@ -243,7 +263,7 @@ def _set_active_key(user_id: int, key: str, valid_until: datetime) -> None:
 
 def _logout_key(user_id: int) -> bool:
     try:
-        _, _, col_keys = _get_db_collections()
+        _, _, col_keys, _ = _get_db_collections()
         res = col_keys.delete_one({"user_id": user_id})
         return bool(res.deleted_count)
     except Exception as e:
@@ -381,35 +401,71 @@ HTML_INDEX = """
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> 
   <title>AIChatPal</title>
   <script src=\"https://cdn.tailwindcss.com\"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81' }}}}};
+  </script>
   <style>
-    .msg { max-width: 80%; }
+    .msg { max-width: 75%; }
     .scroll-area { height: calc(100vh - 200px); }
+    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.7); }
+    .dark .glass { background: rgba(17,24,39,0.6); }
   </style>
 </head>
-<body class=\"bg-gray-50 text-gray-900\">
-  <div class=\"min-h-screen flex flex-col\">
-    <header class=\"bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-4 shadow\">
-      <div class=\"max-w-3xl mx-auto flex items-center justify-between\">
-        <h1 class=\"text-xl font-bold\">AIChatPal</h1>
-        <div class=\"flex gap-2\">
-          <button id=\"newChatBtn\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">New chat</button>
-          <button id=\"keyBtn\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">Activate key</button>
-        </div>
+<body class=\"bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100\">
+  <div class=\"min-h-screen flex\">
+    <!-- Sidebar -->
+    <aside class=\"hidden md:flex w-72 flex-col border-r border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 glass\">
+      <div class=\"p-4 flex items-center justify-between\">
+        <div class=\"font-bold text-lg\">AIChatPal</div>
+        <button id=\"themeToggle\" class=\"px-2 py-1 text-xs rounded bg-slate-200 dark:bg-slate-700\">Theme</button>
       </div>
-    </header>
-
-    <main class=\"flex-1\">
-      <div class=\"max-w-3xl mx-auto p-4\">
-        <div id=\"chat\" class=\"scroll-area overflow-y-auto rounded-lg border bg-white p-3 space-y-3 shadow\"></div>
-        <div class=\"mt-4 flex items-end gap-2\">
-          <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"flex-1 rounded border p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500\"></textarea>
-          <button id=\"send\" class=\"h-12 px-5 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50\">Send</button>
-        </div>
-        <p id=\"limit\" class=\"text-sm text-gray-500 mt-2\"></p>
+      <div class=\"px-4\">
+        <button id=\"newChatBtn\" class=\"w-full mb-3 px-3 py-2 rounded bg-brand-600 hover:bg-brand-700 text-white shadow\">New chat</button>
+        <div class=\"text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2\">Saved chats</div>
       </div>
-    </main>
+      <nav id=\"convoList\" class=\"flex-1 overflow-y-auto px-2 space-y-1\"></nav>
+      <div class=\"p-4 border-t border-slate-200 dark:border-slate-700 space-y-2\">
+        <button id=\"keyBtn\" class=\"w-full px-3 py-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700\">Activate key</button>
+        <button id=\"loginBtn\" class=\"w-full px-3 py-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700\">Admin login</button>
+        <button id=\"logoutBtn\" class=\"hidden w-full px-3 py-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700\">Logout</button>
+      </div>
+    </aside>
 
-    <footer class=\"text-center text-xs text-gray-500 py-4\">Powered by Gemini</footer>
+    <!-- Main -->
+    <div class=\"flex-1 flex flex-col\">
+      <header class=\"sticky top-0 z-10 bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600 text-white p-4 shadow\">
+        <div class=\"max-w-5xl mx-auto flex items-center justify-between\">
+          <div class=\"flex items-center gap-3\">
+            <button id=\"mobileMenu\" class=\"md:hidden px-3 py-2 rounded bg-white/20\">Menu</button>
+            <h1 class=\"text-xl font-bold\">AIChatPal</h1>
+            <span id=\"adminBadge\" class=\"hidden text-xs px-2 py-1 rounded bg-white/20\">Admin</span>
+          </div>
+          <div class=\"flex gap-2\">
+            <button id=\"newChatBtnTop\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">New chat</button>
+            <button id=\"keyBtnTop\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">Activate key</button>
+          </div>
+        </div>
+      </header>
+
+      <main class=\"flex-1\">
+        <div class=\"max-w-5xl mx-auto p-4 grid grid-cols-1\">
+          <div id=\"chat\" class=\"scroll-area overflow-y-auto rounded-xl border bg-white/80 dark:bg-slate-900/60 glass p-4 space-y-4 shadow\"></div>
+          <div class=\"mt-4 flex items-end gap-2\">
+            <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"flex-1 rounded-lg border p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900/60 dark:border-slate-700\"></textarea>
+            <button id=\"send\" class=\"h-12 px-5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 shadow\">Send</button>
+          </div>
+          <div class=\"flex items-center justify-between mt-2 text-sm text-slate-500\">
+            <p id=\"limit\"></p>
+            <div class=\"space-x-2\">
+              <button id=\"renameBtn\" class=\"px-3 py-1 rounded border\">Rename</button>
+              <button id=\"deleteBtn\" class=\"px-3 py-1 rounded border\">Delete</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class=\"text-center text-xs text-slate-500 py-4\">Powered by Gemini</footer>
+    </div>
   </div>
 
 <script>
@@ -417,14 +473,29 @@ const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 const newChatBtn = document.getElementById('newChatBtn');
+const newChatBtnTop = document.getElementById('newChatBtnTop');
 const keyBtn = document.getElementById('keyBtn');
+const keyBtnTop = document.getElementById('keyBtnTop');
 const limitP = document.getElementById('limit');
+const convoList = document.getElementById('convoList');
+const renameBtn = document.getElementById('renameBtn');
+const deleteBtn = document.getElementById('deleteBtn');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const adminBadge = document.getElementById('adminBadge');
+const themeToggle = document.getElementById('themeToggle');
+
+let state = { conversations: [], current: null, is_admin: false };
+
+function fmtTime(ts) {
+  try { return new Date(ts).toLocaleString(); } catch { return ''; }
+}
 
 function renderMessage(role, content) {
   const row = document.createElement('div');
   row.className = 'w-full flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
   const bubble = document.createElement('div');
-  bubble.className = 'msg rounded-2xl px-4 py-2 shadow ' + (role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100');
+  bubble.className = 'msg rounded-2xl px-4 py-2 shadow ' + (role === 'user' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800');
   bubble.textContent = content;
   row.appendChild(bubble);
   chat.appendChild(row);
@@ -435,12 +506,68 @@ function renderThinking() {
   const row = document.createElement('div');
   row.className = 'w-full flex justify-start';
   const bubble = document.createElement('div');
-  bubble.className = 'msg rounded-2xl px-4 py-2 shadow bg-gray-100 italic text-gray-500';
+  bubble.className = 'msg rounded-2xl px-4 py-2 shadow italic text-slate-500 bg-slate-100 dark:bg-slate-800';
   bubble.textContent = 'Thinking…';
   row.appendChild(bubble);
   chat.appendChild(row);
   chat.scrollTop = chat.scrollHeight;
   return row;
+}
+
+function renderConversations() {
+  convoList.innerHTML = '';
+  state.conversations.forEach(c => {
+    const a = document.createElement('button');
+    a.className = 'w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between ' + (state.current === c.id ? 'bg-slate-100 dark:bg-slate-800' : '');
+    const left = document.createElement('div');
+    left.innerHTML = `<div class=\"text-sm\">${c.title || 'Untitled'}</div><div class=\"text-xs text-slate-500\">${fmtTime(c.updated_at)}</div>`;
+    a.appendChild(left);
+    a.addEventListener('click', async () => {
+      await selectConversation(c.id);
+    });
+    convoList.appendChild(a);
+  });
+}
+
+async function loadConversations() {
+  const res = await fetch('/api/conversations');
+  const data = await res.json();
+  state.conversations = data.conversations || [];
+  state.current = data.current || (state.conversations[0]?.id || null);
+  state.is_admin = !!data.is_admin;
+  renderConversations();
+  adminBadge.classList.toggle('hidden', !state.is_admin);
+  loginBtn.classList.toggle('hidden', state.is_admin);
+  logoutBtn.classList.toggle('hidden', !state.is_admin);
+}
+
+async function selectConversation(id) {
+  await fetch('/api/select_conversation', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+  state.current = id;
+  await Promise.all([loadConversations(), loadHistory()]);
+}
+
+async function createConversation(title) {
+  const res = await fetch('/api/conversations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
+  const data = await res.json();
+  state.current = data.id;
+  await Promise.all([loadConversations(), loadHistory()]);
+}
+
+async function renameConversation() {
+  if (!state.current) return;
+  const title = prompt('Enter new title:');
+  if (!title) return;
+  await fetch(`/api/conversations/${state.current}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
+  await loadConversations();
+}
+
+async function deleteConversation() {
+  if (!state.current) return;
+  if (!confirm('Delete this conversation?')) return;
+  await fetch(`/api/conversations/${state.current}`, { method: 'DELETE' });
+  await loadConversations();
+  await loadHistory();
 }
 
 async function loadHistory() {
@@ -450,7 +577,7 @@ async function loadHistory() {
   (data.history || []).forEach(m => renderMessage(m.role, m.content));
   if (data.left !== undefined) {
     if (data.left < 0) {
-      limitP.textContent = '';
+      limitP.textContent = 'Unlimited access active';
     } else {
       limitP.textContent = `Free messages left today: ${data.left}`;
     }
@@ -473,7 +600,7 @@ async function sendMessage() {
     } else {
       renderMessage('assistant', data.reply || '(No response)');
       if (data.left !== undefined) {
-        if (data.left < 0) { limitP.textContent = ''; } else { limitP.textContent = `Free messages left today: ${data.left}`; }
+        if (data.left < 0) { limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; }
       }
     }
   } catch(e) {
@@ -486,23 +613,32 @@ async function sendMessage() {
 
 sendBtn.addEventListener('click', sendMessage);
 input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
-newChatBtn.addEventListener('click', async () => {
-  await fetch('/api/newchat', {method: 'POST'});
-  await loadHistory();
-});
-keyBtn.addEventListener('click', async () => {
+[newChatBtn, newChatBtnTop].forEach(btn => btn && btn.addEventListener('click', async () => { await fetch('/api/newchat', {method: 'POST'}); await Promise.all([loadConversations(), loadHistory()]); }));
+[keyBtn, keyBtnTop].forEach(btn => btn && btn.addEventListener('click', async () => {
   const key = prompt('Enter your key:');
   if (!key) return;
   const res = await fetch('/api/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
   const data = await res.json();
-  if (data.ok) {
-    alert('Key activated!');
-  } else {
-    alert(data.error || 'Invalid key');
-  }
+  if (data.ok) { alert('Key activated!'); await loadHistory(); } else { alert(data.error || 'Invalid key'); }
+}));
+renameBtn.addEventListener('click', renameConversation);
+deleteBtn.addEventListener('click', deleteConversation);
+loginBtn.addEventListener('click', async () => {
+  const u = prompt('Admin username:');
+  const p = prompt('Admin password:');
+  if (!u || !p) return;
+  const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u, password:p}) });
+  const data = await res.json();
+  if (data.ok) { await loadConversations(); await loadHistory(); } else { alert(data.error || 'Login failed'); }
 });
+logoutBtn.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await loadConversations(); await loadHistory(); });
 
-loadHistory();
+document.getElementById('mobileMenu').addEventListener('click', () => { document.querySelector('aside').classList.toggle('hidden'); });
+
+themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
+if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
+
+Promise.all([loadConversations(), loadHistory()]);
 </script>
 </body>
 </html>
@@ -546,41 +682,200 @@ def _create_flask_app() -> Flask:
             )
             return int(uid_val), response
 
+    def _is_admin_request() -> bool:
+        try:
+            return request.cookies.get("admin") == "1"
+        except Exception:
+            return False
+
+    def _generate_conversation_id() -> str:
+        return secrets.token_hex(8)
+
+    def _ensure_current_conversation(user_id: int) -> Tuple[str, Optional[Response]]:
+        cid_cookie = request.cookies.get("cid")
+        if cid_cookie:
+            return cid_cookie, None
+        # create a new conversation and set cookie
+        cid = _generate_conversation_id()
+        _, _, _, col_convos = _get_db_collections()
+        now = datetime.now(timezone.utc)
+        try:
+            col_convos.insert_one({
+                "user_id": user_id,
+                "id": cid,
+                "title": "New chat",
+                "created_at": now,
+                "updated_at": now,
+            })
+        except Exception as e:
+            _log_admin(f"DB error creating conversation: {e}")
+        _save_conversation_history(user_id, [], cid)
+        response = make_response()
+        response.set_cookie(
+            "cid",
+            cid,
+            max_age=60*60*24*365,
+            httponly=True,
+            samesite="Lax",
+        )
+        return cid, response
+
     def _free_left(user_id: int) -> int:
-        if _has_active_key(user_id):
+        if _is_admin_request() or _has_active_key(user_id):
             return -1
         used = _get_message_count(user_id)
         left = max(0, FREE_DAILY_LIMIT - used)
         return left
 
+    def _update_conversation_timestamp(user_id: int, cid: str) -> None:
+        try:
+            _, _, _, col_convos = _get_db_collections()
+            col_convos.update_one({"user_id": user_id, "id": cid}, {"$set": {"updated_at": datetime.now(timezone.utc)}})
+        except Exception as e:
+            _log_admin(f"DB error updating conversation timestamp: {e}")
+
     @app.get("/")
     def index() -> Response:
         user_id, resp = _get_or_create_user_id()
-        if resp is None:
+        cid, resp2 = _ensure_current_conversation(user_id)
+        final_resp: Optional[Response] = resp or resp2
+        if final_resp is None:
             return Response(HTML_INDEX, mimetype="text/html")
-        resp.set_data(HTML_INDEX)
-        resp.mimetype = "text/html"
-        return resp
+        final_resp.set_data(HTML_INDEX)
+        final_resp.mimetype = "text/html"
+        return final_resp
 
     @app.get("/api/history")
     def api_history():
         user_id, resp = _get_or_create_user_id()
-        history = load_conversation_history(user_id)
+        cid, resp2 = _ensure_current_conversation(user_id)
+        history = load_conversation_history(user_id, cid)
         payload = {
             "history": [{"role": m.get("role"), "content": m.get("content")} for m in history],
             "left": _free_left(user_id),
         }
-        if resp is None:
+        combined_resp = resp or resp2
+        if combined_resp is None:
             return jsonify(payload)
-        resp.set_data(json.dumps(payload))
-        resp.mimetype = "application/json"
+        combined_resp.set_data(json.dumps(payload))
+        combined_resp.mimetype = "application/json"
+        return combined_resp
+
+    @app.get("/api/conversations")
+    def api_conversations():
+        user_id, resp = _get_or_create_user_id()
+        cid, resp2 = _ensure_current_conversation(user_id)
+        try:
+            _, _, _, col_convos = _get_db_collections()
+            items = list(col_convos.find({"user_id": user_id}).sort("updated_at", -1))
+            convos = [{"id": it.get("id"), "title": it.get("title", "New chat"), "updated_at": (it.get("updated_at") or datetime.now(timezone.utc)).isoformat()} for it in items]
+        except Exception as e:
+            _log_admin(f"DB error listing conversations: {e}")
+            convos = []
+        payload = {"conversations": convos, "current": cid, "is_admin": request.cookies.get("admin") == "1"}
+        combined_resp = resp or resp2
+        if combined_resp is None:
+            return jsonify(payload)
+        combined_resp.set_data(json.dumps(payload))
+        combined_resp.mimetype = "application/json"
+        return combined_resp
+
+    @app.post("/api/conversations")
+    def api_conversations_create():
+        user_id, _ = _get_or_create_user_id()
+        data = request.get_json(silent=True) or {}
+        title = str(data.get("title") or "New chat").strip() or "New chat"
+        cid = secrets.token_hex(8)
+        _, _, _, col_convos = _get_db_collections()
+        now = datetime.now(timezone.utc)
+        try:
+            col_convos.insert_one({
+                "user_id": user_id,
+                "id": cid,
+                "title": title,
+                "created_at": now,
+                "updated_at": now,
+            })
+            _save_conversation_history(user_id, [], cid)
+        except Exception as e:
+            _log_admin(f"DB error creating conversation: {e}")
+        resp = jsonify({"ok": True, "id": cid})
+        resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
+        return resp
+
+    @app.post("/api/select_conversation")
+    def api_select_conversation():
+        user_id, _ = _get_or_create_user_id()
+        data = request.get_json(silent=True) or {}
+        cid = str(data.get("id") or "").strip()
+        if not cid:
+            return jsonify({"ok": False, "error": "Missing id"}), 400
+        try:
+            _, _, _, col_convos = _get_db_collections()
+            exists = col_convos.find_one({"user_id": user_id, "id": cid})
+            if not exists:
+                return jsonify({"ok": False, "error": "Not found"}), 404
+        except Exception:
+            pass
+        resp = jsonify({"ok": True})
+        resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
+        return resp
+
+    @app.put("/api/conversations/<cid>")
+    def api_conversations_rename(cid: str):
+        user_id, _ = _get_or_create_user_id()
+        data = request.get_json(silent=True) or {}
+        title = str(data.get("title") or "").strip()
+        if not title:
+            return jsonify({"ok": False, "error": "Missing title"}), 400
+        try:
+            _, _, _, col_convos = _get_db_collections()
+            col_convos.update_one({"user_id": user_id, "id": cid}, {"$set": {"title": title, "updated_at": datetime.now(timezone.utc)}})
+            return jsonify({"ok": True})
+        except Exception as e:
+            _log_admin(f"DB error renaming conversation: {e}")
+            return jsonify({"ok": False, "error": "DB error"}), 500
+
+    @app.delete("/api/conversations/<cid>")
+    def api_conversations_delete(cid: str):
+        user_id, _ = _get_or_create_user_id()
+        try:
+            col_users, col_history, _, col_convos = _get_db_collections()
+            col_convos.delete_one({"user_id": user_id, "id": cid})
+            col_history.delete_one({"user_id": user_id, "conversation_id": cid})
+        except Exception as e:
+            _log_admin(f"DB error deleting conversation: {e}")
+            return jsonify({"ok": False, "error": "DB error"}), 500
+        # Select another conversation if any
+        try:
+            items = list(col_convos.find({"user_id": user_id}).sort("updated_at", -1))
+            new_cid = items[0]["id"] if items else secrets.token_hex(8)
+            if not items:
+                # create an empty one
+                now = datetime.now(timezone.utc)
+                col_convos.insert_one({"user_id": user_id, "id": new_cid, "title": "New chat", "created_at": now, "updated_at": now})
+                _save_conversation_history(user_id, [], new_cid)
+        except Exception:
+            new_cid = secrets.token_hex(8)
+        resp = jsonify({"ok": True, "current": new_cid})
+        resp.set_cookie("cid", new_cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
         return resp
 
     @app.post("/api/newchat")
     def api_newchat():
         user_id, _ = _get_or_create_user_id()
-        _save_conversation_history(user_id, [])
-        return jsonify({"ok": True})
+        # Create a new conversation and set as current
+        cid = secrets.token_hex(8)
+        _, _, _, col_convos = _get_db_collections()
+        now = datetime.now(timezone.utc)
+        try:
+            col_convos.insert_one({"user_id": user_id, "id": cid, "title": "New chat", "created_at": now, "updated_at": now})
+            _save_conversation_history(user_id, [], cid)
+        except Exception as e:
+            _log_admin(f"DB error creating new chat: {e}")
+        resp = jsonify({"ok": True, "id": cid})
+        resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
+        return resp
 
     @app.post("/api/key")
     def api_key():
@@ -599,22 +894,40 @@ def _create_flask_app() -> Flask:
         _set_active_key(user_id, provided, valid_until)
         return jsonify({"ok": True, "valid_until": valid_until.isoformat()})
 
+    @app.post("/api/login")
+    def api_login():
+        data = request.get_json(silent=True) or {}
+        username = str(data.get("username") or "").strip()
+        password = str(data.get("password") or "").strip()
+        if username == "admin123" and password == "admin123":
+            resp = jsonify({"ok": True})
+            resp.set_cookie("admin", "1", max_age=60*60*24*7, httponly=True, samesite="Lax")
+            return resp
+        return jsonify({"ok": False, "error": "Invalid credentials"}), 401
+
+    @app.post("/api/logout")
+    def api_logout():
+        resp = jsonify({"ok": True})
+        resp.delete_cookie("admin")
+        return resp
+
     @app.post("/api/chat")
     def api_chat():
         user_id, _ = _get_or_create_user_id()
+        cid, _ = _ensure_current_conversation(user_id)
         data = request.get_json(silent=True) or {}
         text = str(data.get("message", "")).strip()
         if not text:
             return jsonify({"error": "Empty message"}), 400
 
         # Rate limit for free users
-        if not _has_active_key(user_id):
+        if not _is_admin_request() and not _has_active_key(user_id):
             current = _get_message_count(user_id)
             if current >= FREE_DAILY_LIMIT:
                 return jsonify({"error": "Daily free limit reached (3/day). Use a key to unlock unlimited.", "left": 0}), 429
             _increment_message_count(user_id)
 
-        history = load_conversation_history(user_id)
+        history = load_conversation_history(user_id, cid)
         now = datetime.now(timezone.utc)
         history.append({"role": "user", "content": text, "timestamp": now})
 
@@ -629,23 +942,37 @@ def _create_flask_app() -> Flask:
             "content": reply_text,
             "timestamp": datetime.now(timezone.utc),
         })
-        _save_conversation_history(user_id, history)
+        _save_conversation_history(user_id, history, cid)
+        _update_conversation_timestamp(user_id, cid)
+
+        # Auto-title if default
+        try:
+            _, _, _, col_convos = _get_db_collections()
+            doc = col_convos.find_one({"user_id": user_id, "id": cid})
+            if doc and (not doc.get("title") or doc.get("title") == "New chat"):
+                preview = text.strip().split("\n")[0][:50]
+                col_convos.update_one({"user_id": user_id, "id": cid}, {"$set": {"title": preview or "New chat"}})
+        except Exception:
+            pass
 
         return jsonify({"reply": reply_text, "left": _free_left(user_id)})
 
-    # Optional admin logs endpoint (no auth in web demo)
+    # Optional admin logs endpoint: now requires admin
     @app.get("/adminJackLogs")
     def admin_logs():
+        if not _is_admin_request():
+            return Response("Forbidden", status=403, mimetype="text/plain")
         try:
-            col_users, col_history, col_keys = _get_db_collections()
+            col_users, col_history, col_keys, col_convos = _get_db_collections()
             users_count = col_users.count_documents({})
             history_count = col_history.count_documents({})
             keys_count = col_keys.count_documents({})
+            conv_count = col_convos.count_documents({})
         except Exception:
-            users_count = history_count = keys_count = -1
+            users_count = history_count = keys_count = conv_count = -1
         tail = "\n".join(_ADMIN_LOGS[-30:]) if _ADMIN_LOGS else "(no logs)"
         msg = (
-            f"DB: users={users_count}, history={history_count}, keys_in_use={keys_count}\n\n"
+            f"DB: users={users_count}, history={history_count}, keys_in_use={keys_count}, conversations={conv_count}\n\n"
             f"Recent logs:\n{tail}"
         )
         return Response(msg, mimetype="text/plain")
