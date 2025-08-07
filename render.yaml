@@ -6,8 +6,6 @@ services:
     buildCommand: "pip install --break-system-packages -r requirements.txt"
     startCommand: "python3 main.py"
     envVars:
-      - key: TELEGRAM_TOKEN
-        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: MONGODB_URI
@@ -15,6 +13,8 @@ services:
       - key: GEMINI_MODEL
         value: gemini-2.5-pro
       - key: GEMINI_SYSTEM_PROMPT
+        sync: false
+      - key: FLASK_SECRET_KEY
         sync: false
     autoDeploy: true
     healthCheckPath: "/"
