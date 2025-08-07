@@ -2,6 +2,8 @@ AIChatPalBot (Telegram + Google Gemini)
 
 A production-ready Telegram bot powered by Google Gemini using the `google-genai` SDK with MongoDB persistence and in-memory fallback. Includes a tiny Flask web server (port 8080) for liveness.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/your-org-or-username/your-repo)
+
 Requirements
 - Python 3.13
 - Linux container friendly
@@ -51,6 +53,7 @@ python3 -m pip install --break-system-packages -r requirements.txt
 
 Run
 ```bash
+# Or copy .env.example to .env and fill it
 export TELEGRAM_TOKEN=YOUR_TELEGRAM_TOKEN
 export GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 # Optional:

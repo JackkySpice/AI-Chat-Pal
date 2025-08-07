@@ -421,7 +421,8 @@ def _start_web_server_background() -> Thread:
             log = logging.getLogger("werkzeug")
             log.setLevel(logging.WARNING)
 
-            app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
+            port = int(os.getenv("PORT", "8080"))
+            app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
         except Exception as e:
             _log_admin(f"Flask server failed: {e}")
 
