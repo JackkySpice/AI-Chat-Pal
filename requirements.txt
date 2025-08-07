@@ -6,3 +6,4 @@ urllib3==1.26.18
 six==1.16.0
 Werkzeug==2.0.3
 python-dotenv==0.19.1
+setuptools
