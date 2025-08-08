@@ -37,6 +37,10 @@
               <input type="checkbox" id="toggle-enter-send" checked />
               <span>Enter to send</span>
             </label>
+            <button class="btn icon" id="settings-btn" aria-label="Open settings">⚙️</button>
+            <div class="search">
+              <input type="search" id="topbar-search" placeholder="Search…" aria-label="Search messages" />
+            </div>
           </div>
         </header>
 
@@ -45,6 +49,12 @@
         </section>
 
         <footer class="composer" aria-label="Message composer">
+          <div class="suggestions" id="suggestions">
+            <button class="btn ghost chip" data-suggest="Summarize this">Summarize</button>
+            <button class="btn ghost chip" data-suggest="Polish the writing">Polish</button>
+            <button class="btn ghost chip" data-suggest="Explain step by step">Explain</button>
+            <button class="btn ghost chip" data-suggest="Translate to Spanish">Translate</button>
+          </div>
           <div class="composer-inner">
             <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true"></textarea>
             <div class="composer-actions">
@@ -63,5 +73,38 @@
     </div>
 
     <script src="./app.js"></script>
+
+    <!-- Settings panel -->
+    <div class="settings" id="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true">
+      <div class="settings-dialog">
+        <div class="settings-header">
+          <div id="settings-title">Settings</div>
+          <button class="btn icon" id="settings-close-btn" aria-label="Close settings">✕</button>
+        </div>
+            <div class="settings-content">
+      <div class="group">
+        <div class="label">Theme</div>
+        <label><input type="radio" name="theme" id="theme-light" value="light"> Light</label>
+        <label><input type="radio" name="theme" id="theme-dark" value="dark"> Dark</label>
+        <label><input type="radio" name="theme" id="theme-amoled" value="amoled"> AMOLED</label>
+      </div>
+      <label class="switch" title="Use decorative wallpaper in chat area">
+        <input type="checkbox" id="toggle-wallpaper" />
+        <span>Wallpaper</span>
+      </label>
+      <label class="switch" title="Reduce spacing for denser layout">
+        <input type="checkbox" id="toggle-density" />
+        <span>Compact mode</span>
+      </label>
+      <div class="group">
+        <div class="label">Export chat</div>
+        <div class="actions">
+          <button class="btn" id="export-json-btn">Export JSON</button>
+          <button class="btn" id="export-md-btn">Export Markdown</button>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
   </body>
 </html>
