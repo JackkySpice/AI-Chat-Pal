@@ -400,10 +400,16 @@ HTML_INDEX = """
   <meta charset=\"utf-8\"> 
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> 
   <title>AIChatPal · Premium</title>
+  <meta name=\"description\" content=\"AIChatPal — fast, elegant AI chat powered by Gemini.\">
+  <meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\">
+  <meta name=\"theme-color\" content=\"#0b1020\" media=\"(prefers-color-scheme: dark)\">
+  <meta property=\"og:title\" content=\"AIChatPal · Premium\">
+  <meta property=\"og:description\" content=\"A beautiful, responsive AI chat experience powered by Gemini.\">
   <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
   <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">
-  <script src=\"https://cdn.tailwindcss.com\"></script>
+  <link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%236366f1' offset='0'/><stop stop-color='%237b61ff' offset='1'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><path d='M36 12L12 36h14l-2 16 24-24H34l2-16z' fill='white' opacity='.95'/></svg>\">
+  <script src=\"https://cdn.tailwindcss.com?plugins=typography,forms,line-clamp\"></script>
   <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css\"/>
   <script>
     tailwind.config = {
@@ -423,11 +429,16 @@ HTML_INDEX = """
           },
           keyframes: {
             shimmer: { '0%': { backgroundPosition: '0% 50%' }, '100%': { backgroundPosition: '100% 50%'} },
-            fadeInUp: { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+            fadeInUp: { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            float: { '0%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-14px)' }, '100%': { transform: 'translateY(0px)' } },
+            spin: { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+            typing: { '0%, 80%, 100%': { transform: 'translateY(0)', opacity: .6 }, '40%': { transform: 'translateY(-4px)', opacity: 1 } }
           },
           animation: {
             shimmer: 'shimmer 2s ease-in-out infinite',
-            fadeInUp: 'fadeInUp .25s ease-out both'
+            fadeInUp: 'fadeInUp .25s ease-out both',
+            float: 'float 12s ease-in-out infinite',
+            spin: 'spin 1s linear infinite'
           }
         }
       },
@@ -440,12 +451,22 @@ HTML_INDEX = """
     .dark .glass { background: rgba(17,24,39,0.5); }
     .scroll-area { height: calc(100vh - 240px); }
     .msg { max-width: 72ch; }
+    .typing-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: .6; display: inline-block; animation: typing 1.2s infinite ease-in-out; }
+    .typing-dot:nth-child(2) { animation-delay: .15s }
+    .typing-dot:nth-child(3) { animation-delay: .30s }
+    .spinner { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid rgba(255,255,255,.45); border-top-color: transparent; }
     ::-webkit-scrollbar { width: 10px; height: 10px }
     ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #475569, #1f2937); border-radius: 999px }
     .dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #94a3b8, #475569) }
   </style>
 </head>
 <body class=\"font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100\">
+  <!-- Decorative animated background -->
+  <div aria-hidden=\"true\" class=\"pointer-events-none fixed inset-0 -z-10 overflow-hidden\">
+    <div class=\"absolute -top-20 -left-20 h-80 w-80 rounded-full blur-3xl opacity-40 dark:opacity-30 bg-gradient-to-br from-brand-400 to-purple-500 animate-float\"></div>
+    <div class=\"absolute top-1/3 -right-16 h-72 w-72 rounded-full blur-3xl opacity-30 dark:opacity-25 bg-gradient-to-br from-pink-400 to-orange-400 [animation-delay:4s] animate-float\"></div>
+    <div class=\"absolute bottom-0 left-1/3 h-64 w-64 rounded-full blur-3xl opacity-25 dark:opacity-20 bg-gradient-to-br from-emerald-400 to-teal-500 [animation-delay:8s] animate-float\"></div>
+  </div>
   <div class=\"min-h-screen flex\">
     <!-- Sidebar -->
     <aside class=\"hidden md:flex w-80 flex-col border-r border-slate-200 dark:border-slate-800 glass\">
@@ -487,6 +508,7 @@ HTML_INDEX = """
           <div class=\"flex items-center gap-3\">
             <button id=\"mobileMenu\" class=\"md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10\">☰</button>
             <h1 class=\"text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600\">AIChatPal</h1>
+            <span class=\"text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-brand-600/15 to-purple-600/15 text-brand-700 dark:text-brand-200 border border-brand-500/20\">Gemini</span>
             <span id=\"adminBadge\" class=\"hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30\">Admin</span>
           </div>
           <div class=\"flex items-center gap-2\">
@@ -516,6 +538,7 @@ HTML_INDEX = """
         </div>
 
         <button id=\"fabNewChat\" class=\"md:hidden fixed bottom-5 right-5 h-12 w-12 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">＋</button>
+        <button id=\"scrollBottom\" class=\"hidden fixed bottom-24 right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">↓</button>
       </main>
 
       <footer class=\"text-center text-xs text-slate-500 py-4\">Powered by Gemini</footer>
@@ -552,6 +575,7 @@ HTML_INDEX = """
   const mobileMenuBtn = document.getElementById('mobileMenu');
   const convSearch = document.getElementById('convSearch');
   const fabNewChat = document.getElementById('fabNewChat');
+  const scrollBottomBtn = document.getElementById('scrollBottom');
 
   let state = { conversations: [], current: null, is_admin: false };
 
@@ -596,6 +620,11 @@ HTML_INDEX = """
     return wrapper.innerHTML;
   }
 
+  function updateScrollBtn() {
+    const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 120;
+    scrollBottomBtn.classList.toggle('hidden', nearBottom);
+  }
+
   // Message rendering
   function avatarFor(role) {
     if (role === 'user') {
@@ -621,8 +650,10 @@ HTML_INDEX = """
       row.appendChild(bubble);
     }
 
+    row.classList.add('animate-fadeInUp');
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
+    updateScrollBtn();
   }
 
   function createElementFromHTML(htmlString) {
@@ -636,11 +667,12 @@ HTML_INDEX = """
     row.className = 'w-full flex items-start gap-3 justify-start';
     const bubble = document.createElement('div');
     bubble.className = 'msg rounded-2xl px-4 py-3 shadow italic text-slate-500 bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70';
-    bubble.innerHTML = '<div class=\"h-4 w-40 rounded bg-gradient-to-r from-slate-200/60 to-slate-300/60 dark:from-slate-700/60 dark:to-slate-600/60 bg-[length:200%_100%] animate-shimmer\"></div>';
+    bubble.innerHTML = '<div class=\"flex items-center gap-1\"><span class=\"typing-dot\"></span><span class=\"typing-dot\"></span><span class=\"typing-dot\"></span></div>';
     row.appendChild(createElementFromHTML(avatarFor('assistant')));
     row.appendChild(bubble);
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
+    updateScrollBtn();
     return row;
   }
 
@@ -735,12 +767,25 @@ HTML_INDEX = """
     });
   }
 
+  function renderEmptyState() {
+    chat.innerHTML = `
+      <div class=\"w-full grid place-items-center\">
+        <div class=\"max-w-2xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
+          <div class=\"inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-elevated\">✨</div>
+          <h2 class=\"text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600\">Welcome to AIChatPal</h2>
+          <p class=\"text-slate-600 dark:text-slate-300\">Start a conversation and experience fast, beautiful AI answers with code highlighting, dark mode, and more.</p>
+          <div><button class=\"px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white hover:from-brand-500 hover:to-purple-500\" onclick=\"document.getElementById('input').focus()\">Start typing</button></div>
+        </div>
+      </div>`;
+  }
+
   // History / chat
   async function loadHistory() {
     const res = await fetch('/api/history');
     const data = await res.json();
     chat.innerHTML = '';
     (data.history || []).forEach(m => renderMessage(m.role, m.content));
+    if ((data.history || []).length === 0) { renderEmptyState(); }
     if (data.left !== undefined) {
       if (data.left < 0) {
         limitP.textContent = 'Unlimited access active';
@@ -748,6 +793,7 @@ HTML_INDEX = """
         limitP.textContent = `Free messages left today: ${data.left}`;
       }
     }
+    updateScrollBtn();
   }
 
   async function sendMessage() {
@@ -757,6 +803,8 @@ HTML_INDEX = """
     autoResizeTextarea(input);
     renderMessage('user', text);
     sendBtn.disabled = true;
+    const previous = sendBtn.innerHTML;
+    sendBtn.innerHTML = '<span class=\"inline-flex items-center gap-2\"><span class=\"spinner animate-spin\"></span> Sending…</span>';
     const thinkingNode = renderThinking();
     try {
       const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
@@ -777,6 +825,7 @@ HTML_INDEX = """
       showToast('Network error', 'error');
     } finally {
       sendBtn.disabled = false;
+      sendBtn.innerHTML = previous || 'Send';
     }
   }
 
@@ -831,6 +880,8 @@ HTML_INDEX = """
   themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
   if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
   if (convSearch) convSearch.addEventListener('input', renderConversations);
+  if (scrollBottomBtn) scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
+  if (chat) chat.addEventListener('scroll', updateScrollBtn);
 
   Promise.all([loadConversations(), loadHistory()]);
   </script>
