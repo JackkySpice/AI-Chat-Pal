@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat UI – Thoughts + Output</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Conversations sidebar">
+        <div class="sidebar-header">
+          <div class="brand">
+            <div class="brand-mark">AI</div>
+            <div class="brand-text">Assistant</div>
+          </div>
+          <button class="btn primary w-100" id="new-chat-btn" aria-label="Start new chat">+ New chat</button>
+        </div>
+        <div class="sidebar-list" id="chat-list" role="list"></div>
+        <div class="sidebar-footer">
+          <button class="btn ghost w-100" id="toggle-theme-btn" aria-label="Toggle theme">Toggle theme</button>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div class="title">Chat</div>
+          <div class="topbar-actions">
+            <label class="switch" title="Show reasoning summary (not private chain-of-thought)">
+              <input type="checkbox" id="toggle-thoughts" checked />
+              <span>Show Thoughts</span>
+            </label>
+          </div>
+        </header>
+
+        <section class="chat" id="chat" aria-live="polite" aria-label="Chat messages">
+          <!-- Messages will be injected here -->
+        </section>
+
+        <footer class="composer" aria-label="Message composer">
+          <div class="composer-inner">
+            <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true"></textarea>
+            <div class="composer-actions">
+              <button class="btn ghost" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
+              <button class="btn primary" id="send-btn" aria-label="Send">Send</button>
+            </div>
+          </div>
+          <div class="disclaimer">
+            Thoughts show a concise reasoning summary and activity log. Private chain-of-thought is not displayed.
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
