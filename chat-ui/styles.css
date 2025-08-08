@@ -301,3 +301,11 @@ body.compact .btn { height: 34px; }
 .attachments { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .attachment { border: 1px dashed var(--border); background: var(--panel-2); border-radius: 10px; padding: 8px; display: inline-flex; gap: 8px; align-items: center; }
 .attachment img { max-width: 120px; height: auto; border-radius: 8px; display: block; }
+
+/* Lightbox */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: none; align-items: center; justify-content: center; z-index: 100; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 12px; box-shadow: var(--elev-shadow); }
+
+/* Drag hint */
+.composer-inner.drag { outline: 2px dashed #60a5fa; outline-offset: 4px; }

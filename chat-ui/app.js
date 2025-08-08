@@ -22,17 +22,29 @@ const searchEl = document.getElementById('topbar-search');
 const exportJsonBtn = document.getElementById('export-json-btn');
 const exportMdBtn = document.getElementById('export-md-btn');
 const fileInputEl = document.getElementById('file-input');
+const prismLightLink = document.getElementById('prism-theme-light');
+const prismDarkLink = document.getElementById('prism-theme-dark');
+const lightboxEl = document.getElementById('lightbox');
 
 let chats = [
   { id: 'c1', title: 'Welcome', messages: [] }
 ];
 let activeChatId = 'c1';
 
+// Prism theme switching with app theme
+function applyPrismThemeFor(theme) {
+  const darkMode = theme === 'dark' || theme === 'amoled';
+  if (!prismLightLink || !prismDarkLink) return;
+  prismLightLink.disabled = !!darkMode;
+  prismDarkLink.disabled = !darkMode;
+}
+
 function setTheme(theme) {
   document.body.classList.remove('dark', 'amoled');
   if (theme === 'dark') document.body.classList.add('dark');
   if (theme === 'amoled') document.body.classList.add('amoled');
   localStorage.setItem('theme', theme);
+  applyPrismThemeFor(theme);
 }
 
 function toggleTheme() {
@@ -144,6 +156,21 @@ function renderPendingAttachments() {
   pendingAttachments.forEach((att, idx) => {
     const pill = document.createElement('div');
     pill.className = 'attachment';
+    pill.draggable = true;
+    pill.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', String(idx)); pill.style.opacity = '0.6'; });
+    pill.addEventListener('dragend', () => { pill.style.opacity = '1'; });
+    pill.addEventListener('dragover', (e) => e.preventDefault());
+    pill.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const from = Number(e.dataTransfer.getData('text/plain'));
+      const to = idx;
+      if (!Number.isNaN(from) && from !== to) {
+        const [moved] = pendingAttachments.splice(from, 1);
+        pendingAttachments.splice(to, 0, moved);
+        renderPendingAttachments();
+      }
+    });
+
     if (att.dataUrl && att.file.type.startsWith('image/')) {
       const img = document.createElement('img');
       img.src = att.dataUrl;
@@ -167,8 +194,14 @@ function renderPendingAttachments() {
   container.style.display = pendingAttachments.length ? '' : 'none';
 }
 
+// Drag-to-reorder attachments + size validation
+const MAX_FILE_MB = 10;
 function handleFiles(files) {
   Array.from(files).forEach((file) => {
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      alert(`File too large: ${file.name} (>${MAX_FILE_MB}MB)`);
+      return;
+    }
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => addAttachment(file, reader.result);
@@ -639,3 +672,50 @@ function exportAsMarkdown() {
 }
 if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportAsJson);
 if (exportMdBtn) exportMdBtn.addEventListener('click', exportAsMarkdown);
+
+// Lightbox
+function openLightbox(src) {
+  if (!lightboxEl) return;
+  const img = lightboxEl.querySelector('img');
+  img.src = src;
+  lightboxEl.classList.add('open');
+  lightboxEl.setAttribute('aria-hidden', 'false');
+}
+function closeLightbox() {
+  if (!lightboxEl) return;
+  lightboxEl.classList.remove('open');
+  lightboxEl.setAttribute('aria-hidden', 'true');
+}
+if (lightboxEl) {
+  lightboxEl.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+}
+
+// Enhance images in answers to open lightbox
+function enableLightboxIn(container) {
+  container.querySelectorAll('.answer img').forEach((img) => {
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', () => openLightbox(img.src));
+  });
+}
+
+// After render, enable lightbox and highlight
+function postRenderEnhancements() {
+  enableLightboxIn(chatEl);
+  if (window.Prism) {
+    requestAnimationFrame(() => Prism.highlightAllUnder(chatEl));
+  }
+}
+
+// Hook post-render
+const _renderMessages = renderMessages;
+renderMessages = function() {
+  _renderMessages();
+  postRenderEnhancements();
+};
+
+// Apply prism theme on boot with saved theme
+(function syncPrismOnBoot() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  applyPrismThemeFor(savedTheme);
+})();
