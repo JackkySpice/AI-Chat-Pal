@@ -5,6 +5,10 @@ const toggleThoughtsEl = document.getElementById('toggle-thoughts');
 const toggleThemeBtn = document.getElementById('toggle-theme-btn');
 const newChatBtn = document.getElementById('new-chat-btn');
 const chatListEl = document.getElementById('chat-list');
+const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+const sidebarEl = document.getElementById('sidebar');
+const enterToSendEl = document.getElementById('toggle-enter-send');
+const appRoot = document.querySelector('.app');
 
 let chats = [
   { id: 'c1', title: 'Welcome', messages: [] }
@@ -32,6 +36,7 @@ function renderChatList() {
       activeChatId = c.id;
       renderChatList();
       renderMessages();
+      closeSidebarOnMobile();
     };
     chatListEl.appendChild(item);
   });
@@ -158,6 +163,7 @@ function renderMessages() {
   chatEl.innerHTML = '';
   chat.messages.forEach((m) => chatEl.appendChild(renderMessage(m)));
   chatEl.scrollTop = chatEl.scrollHeight;
+  toggleScrollButtonVisibility();
 }
 
 function simulateAssistantResponse(userText) {
@@ -206,24 +212,73 @@ function initSeedMessages() {
   });
 }
 
+function resizeTextareaToContent() {
+  inputEl.style.height = 'auto';
+  const maxHeight = 180; // px
+  const newHeight = Math.min(inputEl.scrollHeight, maxHeight);
+  inputEl.style.height = newHeight + 'px';
+}
+
+function shouldSendOnEnter(e) {
+  const enterToSend = enterToSendEl ? enterToSendEl.checked : true;
+  return enterToSend && e.key === 'Enter' && !e.shiftKey;
+}
+
+function toggleSidebarOnMobile() {
+  if (!sidebarEl) return;
+  const isOpen = sidebarEl.classList.toggle('open');
+  if (appRoot) appRoot.classList.toggle('sidebar-open', isOpen);
+}
+function closeSidebarOnMobile() {
+  if (!sidebarEl) return;
+  sidebarEl.classList.remove('open');
+  if (appRoot) appRoot.classList.remove('sidebar-open');
+}
+
+function createScrollToBottomButton() {
+  const btn = document.createElement('button');
+  btn.className = 'btn primary icon scroll-to-bottom';
+  btn.innerHTML = '⬇';
+  btn.title = 'Scroll to bottom';
+  btn.style.display = 'none';
+  btn.addEventListener('click', () => {
+    chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
+  });
+  document.body.appendChild(btn);
+  return btn;
+}
+
+const scrollBtn = createScrollToBottomButton();
+
+function toggleScrollButtonVisibility() {
+  const threshold = 80; // px from bottom
+  const distanceFromBottom = chatEl.scrollHeight - chatEl.clientHeight - chatEl.scrollTop;
+  scrollBtn.style.display = distanceFromBottom > threshold ? 'inline-flex' : 'none';
+}
+
 sendBtn.addEventListener('click', () => {
   const text = inputEl.value.trim();
   if (!text) return;
   inputEl.value = '';
+  resizeTextareaToContent();
   addMessage('user', text);
   simulateAssistantResponse(text);
 });
 
+inputEl.addEventListener('input', resizeTextareaToContent);
 inputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  if (shouldSendOnEnter(e)) {
     e.preventDefault();
     sendBtn.click();
   }
 });
 
-toggleThoughtsEl.addEventListener('change', () => renderMessages());
+chatEl.addEventListener('scroll', toggleScrollButtonVisibility, { passive: true });
 
-toggleThemeBtn.addEventListener('click', toggleTheme);
+if (toggleThoughtsEl) toggleThoughtsEl.addEventListener('change', () => renderMessages());
+if (toggleThemeBtn) toggleThemeBtn.addEventListener('click', toggleTheme);
+if (enterToSendEl) enterToSendEl.addEventListener('change', () => {});
+if (toggleSidebarBtn) toggleSidebarBtn.addEventListener('click', toggleSidebarOnMobile);
 
 newChatBtn.addEventListener('click', () => {
   const id = 'c' + (chats.length + 1);
@@ -232,6 +287,7 @@ newChatBtn.addEventListener('click', () => {
   renderChatList();
   renderMessages();
   initSeedMessages();
+  closeSidebarOnMobile();
 });
 
 (function boot() {
@@ -240,4 +296,15 @@ newChatBtn.addEventListener('click', () => {
   renderChatList();
   renderMessages();
   initSeedMessages();
+  resizeTextareaToContent();
 })();
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSidebarOnMobile();
+});
+document.addEventListener('click', (e) => {
+  if (!sidebarEl || !sidebarEl.classList.contains('open')) return;
+  const clickInsideSidebar = sidebarEl.contains(e.target);
+  const clickedToggle = toggleSidebarBtn && toggleSidebarBtn.contains(e.target);
+  if (!clickInsideSidebar && !clickedToggle) closeSidebarOnMobile();
+});

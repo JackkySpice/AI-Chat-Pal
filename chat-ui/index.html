@@ -11,8 +11,8 @@
   </head>
   <body>
     <div class="app">
-      <aside class="sidebar" aria-label="Conversations sidebar">
-        <div class="sidebar-header">
+             <aside class="sidebar" id="sidebar" aria-label="Conversations sidebar">
+         <div class="sidebar-header">
           <div class="brand">
             <div class="brand-mark">AI</div>
             <div class="brand-text">Assistant</div>
@@ -26,11 +26,16 @@
       </aside>
       <main class="main">
         <header class="topbar">
+          <button class="btn icon" id="toggle-sidebar-btn" aria-label="Toggle sidebar" aria-controls="sidebar">☰</button>
           <div class="title">Chat</div>
           <div class="topbar-actions">
             <label class="switch" title="Show reasoning summary (not private chain-of-thought)">
               <input type="checkbox" id="toggle-thoughts" checked />
               <span>Show Thoughts</span>
+            </label>
+            <label class="switch" title="Press Enter to send (Shift+Enter for newline)">
+              <input type="checkbox" id="toggle-enter-send" checked />
+              <span>Enter to send</span>
             </label>
           </div>
         </header>
@@ -43,8 +48,11 @@
           <div class="composer-inner">
             <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true"></textarea>
             <div class="composer-actions">
-              <button class="btn ghost" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
-              <button class="btn primary" id="send-btn" aria-label="Send">Send</button>
+              <button class="btn ghost icon" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
+              <button class="btn primary" id="send-btn" aria-label="Send">
+                <span class="btn-text">Send</span>
+                <span class="btn-icon">➤</span>
+              </button>
             </div>
           </div>
           <div class="disclaimer">
