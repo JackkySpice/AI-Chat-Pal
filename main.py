@@ -398,7 +398,11 @@ HTML_INDEX = """
 <html lang=\"en\">
 <head>
   <meta charset=\"utf-8\"> 
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> 
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\"> 
+  <meta name=\"theme-color\" content=\"#0b1020\" media=\"(prefers-color-scheme: dark)\"> 
+  <meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\"> 
+  <link rel=\"manifest\" href=\"/manifest.webmanifest\"> 
+  <meta name=\"format-detection\" content=\"telephone=no\"> 
   <title>AIChatPal · Premium</title>
   <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
@@ -443,6 +447,9 @@ HTML_INDEX = """
     ::-webkit-scrollbar { width: 10px; height: 10px }
     ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #475569, #1f2937); border-radius: 999px }
     .dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #94a3b8, #475569) }
+    /* Mobile safe area and bottom-nav space */
+    body { padding-bottom: env(safe-area-inset-bottom); }
+    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
   </style>
 </head>
 <body class=\"font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100\">
@@ -502,10 +509,18 @@ HTML_INDEX = """
           <div class=\"mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-3 md:p-4 shadow-elevated\">
             <div class=\"flex items-end gap-2\">
               <div class=\"flex-1\">
-                <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 md:p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500\"></textarea>
+                <div class=\"flex items-center gap-2\">
+                  <button id=\"micBtn\" title=\"Voice input\" class=\"md:hidden inline-flex shrink-0 h-11 w-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800 grid place-items-center\">🎤</button>
+                  <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 md:p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500\"></textarea>
+                </div>
                 <div class=\"mt-2 flex items-center justify-between text-xs text-slate-500\">
-                  <div class=\"flex items-center gap-2\">
+                  <div class=\"flex flex-wrap items-center gap-2\">
                     <span class=\"hidden sm:inline\">Shift+Enter for new line</span>
+                    <div class=\"flex flex-wrap gap-2\">
+                      <button class=\"qp px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70\">Explain</button>
+                      <button class=\"qp px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70\">Summarize</button>
+                      <button class=\"qp px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70\">Translate</button>
+                    </div>
                   </div>
                   <p id=\"limit\" class=\"px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300\"></p>
                 </div>
@@ -515,8 +530,17 @@ HTML_INDEX = """
           </div>
         </div>
 
-        <button id=\"fabNewChat\" class=\"md:hidden fixed bottom-5 right-5 h-12 w-12 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">＋</button>
+        <button id=\"fabNewChat\" class=\"md:hidden fixed bottom-16 right-5 h-12 w-12 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">＋</button>
       </main>
+
+      <nav id=\"mobileNav\" class=\"md:hidden fixed bottom-0 left-0 right-0 z-30 glass border-t border-slate-200 dark:border-slate-800\">
+        <div class=\"flex justify-around items-center py-2\" style=\"padding-bottom: env(safe-area-inset-bottom)\">
+          <button id=\"navHome\" class=\"px-3 py-1 text-sm\">🏠</button>
+          <button id=\"navNew\" class=\"px-3 py-1 text-sm\">🆕</button>
+          <button id=\"navKey\" class=\"px-3 py-1 text-sm\">🔑</button>
+          <button id=\"navTheme\" class=\"px-3 py-1 text-sm\">🌓</button>
+        </div>
+      </nav>
 
       <footer class=\"text-center text-xs text-slate-500 py-4\">Powered by Gemini</footer>
     </div>
@@ -552,6 +576,11 @@ HTML_INDEX = """
   const mobileMenuBtn = document.getElementById('mobileMenu');
   const convSearch = document.getElementById('convSearch');
   const fabNewChat = document.getElementById('fabNewChat');
+  const micBtn = document.getElementById('micBtn');
+  const navHome = document.getElementById('navHome');
+  const navNew = document.getElementById('navNew');
+  const navKey = document.getElementById('navKey');
+  const navTheme = document.getElementById('navTheme');
 
   let state = { conversations: [], current: null, is_admin: false };
 
@@ -569,6 +598,39 @@ HTML_INDEX = """
   function autoResizeTextarea(el) {
     el.style.height = 'auto';
     el.style.height = (el.scrollHeight) + 'px';
+  }
+
+  // Web Speech API voice input
+  let recognition = null;
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      showToast('Voice input not supported on this device','error');
+      return;
+    }
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!recognition) {
+      recognition = new SpeechRec();
+      recognition.lang = navigator.language || 'en-US';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.onresult = (e) => {
+        let text = '';
+        for (let i=0; i<e.results.length; i++) {
+          text += e.results[i][0].transcript;
+        }
+        input.value = text;
+        autoResizeTextarea(input);
+      };
+      recognition.onerror = () => { showToast('Voice error','error'); };
+      recognition.onend = () => { micBtn?.classList.remove('opacity-70'); };
+    }
+    if (micBtn?.classList.contains('opacity-70')) {
+      recognition.stop();
+      micBtn.classList.remove('opacity-70');
+    } else {
+      try { recognition.start(); micBtn?.classList.add('opacity-70'); }
+      catch { showToast('Try again','error'); }
+    }
   }
 
   function fmtTime(ts) { try { return new Date(ts).toLocaleString(); } catch { return ''; } }
@@ -784,6 +846,14 @@ HTML_INDEX = """
   sendBtn.addEventListener('click', sendMessage);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
   input.addEventListener('input', () => autoResizeTextarea(input));
+  document.querySelectorAll('.qp').forEach(btn => btn.addEventListener('click', () => {
+    const t = btn.textContent.trim();
+    if (!input.value) { input.value = t + ': '; } else { input.value += (input.value.endsWith(' ')?'':' ') + t + ': '; }
+    input.focus();
+    autoResizeTextarea(input);
+  }));
+
+  if (micBtn) micBtn.addEventListener('click', toggleVoice);
 
   const newChatHandlers = [newChatBtn, newChatBtnTop, fabNewChat].filter(Boolean);
   newChatHandlers.forEach(btn => btn.addEventListener('click', async () => { await fetch('/api/newchat', {method: 'POST'}); await Promise.all([loadConversations(), loadHistory()]); showToast('New chat created','success'); }));
@@ -831,6 +901,21 @@ HTML_INDEX = """
   themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
   if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
   if (convSearch) convSearch.addEventListener('input', renderConversations);
+
+  // Mobile bottom nav
+  if (navHome) navHome.addEventListener('click', () => { window.scrollTo({top:0, behavior:'smooth'}); });
+  if (navNew) navNew.addEventListener('click', async () => { await fetch('/api/newchat', {method:'POST'}); await Promise.all([loadConversations(), loadHistory()]); showToast('New chat created','success'); });
+  if (navKey) navKey.addEventListener('click', async () => { keyBtn?.click(); });
+  if (navTheme) navTheme.addEventListener('click', () => { themeToggle?.click(); });
+
+  // Online/offline toasts
+  window.addEventListener('offline', () => showToast('You are offline','error'));
+  window.addEventListener('online', () => showToast('Back online','success'));
+
+  // PWA Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  }
 
   Promise.all([loadConversations(), loadHistory()]);
   </script>
@@ -1172,6 +1257,50 @@ def _create_flask_app() -> Flask:
         return Response(msg, mimetype="text/plain")
 
     # Daily reset job: naive timer loop if desired (skipped; relies on external cron in prod)
+
+    @app.get("/manifest.webmanifest")
+    def manifest():
+        manifest = {
+            "name": "AIChatPal",
+            "short_name": "AIChatPal",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#0b1020",
+            "icons": [
+                {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+            ]
+        }
+        return Response(json.dumps(manifest), mimetype="application/manifest+json")
+
+    @app.get("/icon.svg")
+    def icon_svg():
+        svg = """
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+  <defs>
+    <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#6366f1'/>
+      <stop offset='100%' stop-color='#a855f7'/>
+    </linearGradient>
+  </defs>
+  <rect rx='12' ry='12' width='64' height='64' fill='url(#g)'/>
+  <text x='50%' y='54%' text-anchor='middle' font-size='28' font-family='Inter, Arial' fill='white'>AI</text>
+</svg>
+"""
+        return Response(svg.strip(), mimetype="image/svg+xml")
+
+    @app.get("/sw.js")
+    def service_worker():
+        js = """
+self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('activate', (e) => { self.clients.claim(); });
+self.addEventListener('fetch', (e) => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => new Response('<!doctype html><title>Offline</title><body style=\"font-family:system-ui;padding:2rem\">You are offline. Please reconnect.</body>', {headers:{'Content-Type':'text/html'}})));
+  }
+});
+"""
+        return Response(js.strip(), mimetype="application/javascript")
 
     return app
 
