@@ -21,6 +21,7 @@ const wallpaperToggleEl = document.getElementById('toggle-wallpaper');
 const searchEl = document.getElementById('topbar-search');
 const exportJsonBtn = document.getElementById('export-json-btn');
 const exportMdBtn = document.getElementById('export-md-btn');
+const fileInputEl = document.getElementById('file-input');
 
 let chats = [
   { id: 'c1', title: 'Welcome', messages: [] }
@@ -98,6 +99,87 @@ function createAvatar(role) {
   return el;
 }
 
+// Markdown rendering helpers
+function renderMarkdownToHtml(text) {
+  if (window.marked) {
+    marked.setOptions({
+      breaks: true,
+      highlight: function(code, lang) {
+        if (window.Prism) {
+          try {
+            if (lang && Prism.languages[lang]) {
+              return Prism.highlight(code, Prism.languages[lang], lang);
+            }
+          } catch {}
+        }
+        return code;
+      }
+    });
+    return marked.parse(text || '');
+  }
+  return (text || '').replace(/\n/g, '<br>');
+}
+
+// Attachments state
+let pendingAttachments = [];
+function addAttachment(file, dataUrl) {
+  pendingAttachments.push({ file, dataUrl });
+  renderPendingAttachments();
+}
+function clearAttachments() {
+  pendingAttachments = [];
+  renderPendingAttachments();
+}
+
+function renderPendingAttachments() {
+  // Ensure attachments container exists above textarea
+  let container = document.querySelector('.attachments');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'attachments';
+    const composerInner = document.querySelector('.composer-inner');
+    composerInner.parentNode.insertBefore(container, composerInner);
+  }
+  container.innerHTML = '';
+  pendingAttachments.forEach((att, idx) => {
+    const pill = document.createElement('div');
+    pill.className = 'attachment';
+    if (att.dataUrl && att.file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = att.dataUrl;
+      pill.appendChild(img);
+    } else {
+      const span = document.createElement('span');
+      span.textContent = att.file.name;
+      pill.appendChild(span);
+    }
+    const x = document.createElement('button');
+    x.className = 'btn icon';
+    x.textContent = '✕';
+    x.title = 'Remove';
+    x.addEventListener('click', () => {
+      pendingAttachments.splice(idx, 1);
+      renderPendingAttachments();
+    });
+    pill.appendChild(x);
+    container.appendChild(pill);
+  });
+  container.style.display = pendingAttachments.length ? '' : 'none';
+}
+
+function handleFiles(files) {
+  Array.from(files).forEach((file) => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => addAttachment(file, reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      addAttachment(file, null);
+    }
+  });
+}
+
+// Modify message renderer to use markdown
 function renderMessage(msg, options = {}) {
   const wrapper = document.createElement('article');
   wrapper.className = 'message ' + (msg.role === 'user' ? 'user' : 'assistant');
@@ -167,11 +249,9 @@ function renderMessage(msg, options = {}) {
     typing.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     answer.appendChild(typing);
   } else {
+    const contentHtml = renderMarkdownToHtml(msg.content || '');
     const p = document.createElement('div');
-    p.innerHTML = msg.content
-      .split('\n')
-      .map(line => line.startsWith('```') ? `<div class="code">${escapeHTML(line.replace(/```/g, ''))}</div>` : `<p>${escapeHTML(line)}</p>`)
-      .join('');
+    p.innerHTML = contentHtml;
     answer.appendChild(p);
   }
 
@@ -367,13 +447,46 @@ function toggleScrollButtonVisibility() {
   scrollBtn.style.display = distanceFromBottom > threshold ? 'inline-flex' : 'none';
 }
 
+// Hook up file actions
+if (fileInputEl) fileInputEl.addEventListener('change', (e) => handleFiles(e.target.files));
+const attachBtn = document.getElementById('attachment-btn');
+if (attachBtn) attachBtn.addEventListener('click', () => fileInputEl && fileInputEl.click());
+
+// Drag & drop on composer
+const composerEl = document.querySelector('.composer-inner');
+if (composerEl) {
+  ['dragenter','dragover'].forEach(ev => composerEl.addEventListener(ev, (e) => { e.preventDefault(); composerEl.classList.add('drag'); }));
+  ;['dragleave','drop'].forEach(ev => composerEl.addEventListener(ev, (e) => { e.preventDefault(); composerEl.classList.remove('drag'); }));
+  composerEl.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+}
+// Paste images/files
+inputEl.addEventListener('paste', (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (const it of items) {
+    if (it.kind === 'file') {
+      const file = it.getAsFile();
+      if (file) handleFiles([file]);
+    }
+  }
+});
+
+// Override send click to include attachments summary
 sendBtn.addEventListener('click', () => {
   const text = inputEl.value.trim();
-  if (!text) return;
+  if (!text && pendingAttachments.length === 0) return;
   inputEl.value = '';
   resizeTextareaToContent();
-  addMessage('user', text);
-  simulateAssistantResponse(text);
+
+  let content = text;
+  if (pendingAttachments.length) {
+    const names = pendingAttachments.map(a => a.file.name).join(', ');
+    content += (content ? '\n\n' : '') + `Attachments: ${names}`;
+  }
+  clearAttachments();
+
+  addMessage('user', content);
+  simulateAssistantResponse(content);
 });
 
 inputEl.addEventListener('input', resizeTextareaToContent);

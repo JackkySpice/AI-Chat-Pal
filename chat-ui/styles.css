@@ -290,3 +290,14 @@ body.compact .btn { height: 34px; }
   .message { padding-left: 56px; }
   .message.user { padding-right: 56px; }
 }
+
+/* Markdown content */
+.answer p { margin: 0 0 8px; }
+.answer ul, .answer ol { margin: 0 0 8px 20px; }
+.answer h1, .answer h2, .answer h3 { margin: 8px 0; }
+.answer blockquote { border-left: 3px solid var(--border); padding-left: 10px; color: var(--text-subtle); }
+
+/* Attachments */
+.attachments { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.attachment { border: 1px dashed var(--border); background: var(--panel-2); border-radius: 10px; padding: 8px; display: inline-flex; gap: 8px; align-items: center; }
+.attachment img { max-width: 120px; height: auto; border-radius: 8px; display: block; }

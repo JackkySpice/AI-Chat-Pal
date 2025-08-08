@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
   </head>
   <body>
     <div class="app">
@@ -58,6 +59,7 @@
           <div class="composer-inner">
             <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true"></textarea>
             <div class="composer-actions">
+              <input type="file" id="file-input" multiple hidden />
               <button class="btn ghost icon" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
               <button class="btn primary" id="send-btn" aria-label="Send">
                 <span class="btn-text">Send</span>
@@ -72,6 +74,11 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
     <script src="./app.js"></script>
 
     <!-- Settings panel -->
