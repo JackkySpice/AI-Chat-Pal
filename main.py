@@ -395,22 +395,22 @@ import secrets
 
 HTML_INDEX = """
 <!doctype html>
-<html lang=\"en\">
+<html lang="en">
 <head>
-  <meta charset=\"utf-8\"> 
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> 
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> 
   <title>AIChatPal · Premium</title>
-  <meta name=\"description\" content=\"AIChatPal — fast, elegant AI chat powered by Gemini.\">
-  <meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\">
-  <meta name=\"theme-color\" content=\"#0b1020\" media=\"(prefers-color-scheme: dark)\">
-  <meta property=\"og:title\" content=\"AIChatPal · Premium\">
-  <meta property=\"og:description\" content=\"A beautiful, responsive AI chat experience powered by Gemini.\">
-  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
-  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
-  <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">
-  <link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%236366f1' offset='0'/><stop stop-color='%237b61ff' offset='1'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><path d='M36 12L12 36h14l-2 16 24-24H34l2-16z' fill='white' opacity='.95'/></svg>\">
-  <script src=\"https://cdn.tailwindcss.com?plugins=typography,forms,line-clamp\"></script>
-  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css\"/>
+  <meta name="description" content="AIChatPal — fast, elegant AI chat powered by Gemini.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="AIChatPal · Premium">
+  <meta property="og:description" content="A beautiful, responsive AI chat experience powered by Gemini.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%236366f1' offset='0'/><stop stop-color='%237b61ff' offset='1'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><path d='M36 12L12 36h14l-2 16 24-24H34l2-16z' fill='white' opacity='.95'/></svg>">
+  <script src="https://cdn.tailwindcss.com?plugins=typography,forms,line-clamp"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
   <script>
     tailwind.config = {
       theme: {
@@ -449,7 +449,20 @@ HTML_INDEX = """
     :root { color-scheme: light dark; }
     .glass { backdrop-filter: saturate(140%) blur(14px); background: rgba(255,255,255,0.55); }
     .dark .glass { background: rgba(17,24,39,0.5); }
+    .noise-overlay { position: fixed; inset: 0; pointer-events: none; z-index: -5; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.025"/></svg>'); background-repeat: repeat; }
     .scroll-area { height: calc(100vh - 240px); }
+    @supports (height: 100dvh) {
+      .scroll-area { height: calc(100dvh - 220px); }
+    }
+    @media (max-width: 768px) {
+      .scroll-area { height: calc(100svh - 180px - env(safe-area-inset-bottom)); }
+      .glass { backdrop-filter: saturate(120%) blur(8px); }
+      .decorative-bg { display: none; }
+    }
+    .mobile-safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+    .safe-fab { bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
+    .scroll-area { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    body.drawer-open { overflow: hidden; }
     .msg { max-width: 72ch; }
     .typing-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: .6; display: inline-block; animation: typing 1.2s infinite ease-in-out; }
     .typing-dot:nth-child(2) { animation-delay: .15s }
@@ -458,102 +471,146 @@ HTML_INDEX = """
     ::-webkit-scrollbar { width: 10px; height: 10px }
     ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #475569, #1f2937); border-radius: 999px }
     .dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #94a3b8, #475569) }
+
+    /* Luxury palette and utilities */
+    :root {
+      --lux-1: #4f46e5; /* indigo-600 */
+      --lux-2: #7c3aed; /* violet-600 */
+      --lux-3: #c026d3; /* fuchsia-600 (muted) */
+    }
+    .dark:root {
+      --lux-1: #6366f1;
+      --lux-2: #7c3aed;
+      --lux-3: #d946ef;
+    }
+    .lux-gradient { background-image: linear-gradient(90deg, var(--lux-1), var(--lux-2), var(--lux-3)); }
+    .lux-bubble-user {
+      background-image: linear-gradient(90deg, var(--lux-1), var(--lux-2), var(--lux-3));
+      color: #fff;
+      box-shadow: 0 10px 30px -12px rgba(2,6,23,0.35);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* Reduced motion/softer visuals */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+      .typing-dot { animation: none !important; opacity: .5; }
+      .glass { backdrop-filter: none; background: rgba(255,255,255,0.75); }
+      .dark .glass { background: rgba(17,24,39,0.75); }
+    }
+    /* Deluxe dark theme backgrounds */
+    body { background-color: #f8fafc; }
+    .dark body { background-color: #0b1020; }
+
+    /* Elevated code blocks */
+    .prose pre { position: relative; border-radius: 14px; overflow: auto; border: 1px solid rgba(15,23,42,0.12); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(2,6,23,0.04); }
+    .prose pre code { background: transparent !important; }
+    .prose pre { background: rgba(248,250,252,0.9); }
+    .dark .prose pre { background: rgba(15,23,42,0.9); border-color: rgba(148,163,184,0.18); box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px -12px rgba(2,6,23,0.35); }
+    .code-badge { position: absolute; top: 8px; left: 8px; font-size: 10px; line-height: 1; letter-spacing: .04em; padding: 4px 6px; border-radius: 999px; background: rgba(2,6,23,0.06); color: #0f172a; border: 1px solid rgba(2,6,23,0.08); }
+    .dark .code-badge { background: rgba(255,255,255,0.08); color: #e2e8f0; border-color: rgba(255,255,255,0.10); }
+    .copy-btn { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; padding: 4px 8px; border-radius: 10px; color: #ffffff; background: rgba(2,6,23,0.6); }
+    .copy-btn:hover { filter: brightness(1.1); }
+    .dark .copy-btn { background: rgba(255,255,255,0.12); }
   </style>
 </head>
-<body class=\"font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100\">
+<body class="font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100">
   <!-- Decorative animated background -->
-  <div aria-hidden=\"true\" class=\"pointer-events-none fixed inset-0 -z-10 overflow-hidden\">
-    <div class=\"absolute -top-20 -left-20 h-80 w-80 rounded-full blur-3xl opacity-40 dark:opacity-30 bg-gradient-to-br from-brand-400 to-purple-500 animate-float\"></div>
-    <div class=\"absolute top-1/3 -right-16 h-72 w-72 rounded-full blur-3xl opacity-30 dark:opacity-25 bg-gradient-to-br from-pink-400 to-orange-400 [animation-delay:4s] animate-float\"></div>
-    <div class=\"absolute bottom-0 left-1/3 h-64 w-64 rounded-full blur-3xl opacity-25 dark:opacity-20 bg-gradient-to-br from-emerald-400 to-teal-500 [animation-delay:8s] animate-float\"></div>
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden decorative-bg">
+    <div class="absolute -top-20 -left-20 h-80 w-80 rounded-full blur-3xl opacity-40 dark:opacity-30 bg-gradient-to-br from-brand-400 to-purple-500 animate-float"></div>
+    <div class="absolute top-1/3 -right-16 h-72 w-72 rounded-full blur-3xl opacity-30 dark:opacity-25 bg-gradient-to-br from-pink-400 to-orange-400 [animation-delay:4s] animate-float"></div>
+    <div class="absolute bottom-0 left-1/3 h-64 w-64 rounded-full blur-3xl opacity-25 dark:opacity-20 bg-gradient-to-br from-emerald-400 to-teal-500 [animation-delay:8s] animate-float"></div>
   </div>
-  <div class=\"min-h-screen flex\">
+  <div class="noise-overlay" aria-hidden="true"></div>
+  <div class="min-h-[100svh] flex text-[15px] md:text-base leading-relaxed">
     <!-- Sidebar -->
-    <aside class=\"hidden md:flex w-80 flex-col border-r border-slate-200 dark:border-slate-800 glass\">
-      <div class=\"p-5 flex items-center justify-between\">
-        <div class=\"flex items-center gap-3\">
-          <div class=\"h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 shadow-elevated\"></div>
+    <aside class="hidden md:flex fixed md:static inset-y-0 left-0 z-40 w-80 flex-col border-r border-slate-200 dark:border-slate-800 glass">
+      <div class="p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 shadow-elevated"></div>
           <div>
-            <div class=\"font-extrabold tracking-tight\">AIChatPal</div>
-            <div class=\"text-xs text-slate-500 dark:text-slate-400\">Your premium AI chat</div>
+            <div class="font-extrabold tracking-tight">AIChatPal</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Your premium AI chat</div>
           </div>
         </div>
-        <button id=\"themeToggle\" class=\"px-2 py-1 text-xs rounded-lg bg-slate-200/70 dark:bg-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition\">
-          <span class=\"inline dark:hidden\">☀️</span>
-          <span class=\"hidden dark:inline\">🌙</span>
+        <button id="themeToggle" class="px-2 py-1 text-xs rounded-lg bg-slate-200/70 dark:bg-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          <span class="inline dark:hidden">☀️</span>
+          <span class="hidden dark:inline">🌙</span>
         </button>
       </div>
-      <div class=\"px-5\">
-        <button id=\"newChatBtn\" class=\"w-full mb-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white shadow-elevated transition\">New chat</button>
-        <div class=\"relative mb-4\">
-          <input id=\"convSearch\" placeholder=\"Search chats\" class=\"w-full px-10 py-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500\" />
-          <div class=\"absolute left-3 top-1/2 -translate-y-1/2 text-slate-400\">🔎</div>
+      <div class="px-5">
+        <button id="newChatBtn" class="w-full mb-4 px-4 py-2.5 rounded-xl lux-gradient text-white shadow-elevated transition hover:brightness-110"><span class="inline-flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span>New chat</span></span></button>
+        <div class="relative mb-4">
+          <input id="convSearch" placeholder="Search chats" class="w-full px-10 py-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></div>
         </div>
-        <div class=\"text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2\">Saved chats</div>
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Saved chats</div>
       </div>
-      <nav id=\"convoList\" class=\"flex-1 overflow-y-auto px-3 space-y-1\"></nav>
-      <div class=\"p-5 border-t border-slate-200 dark:border-slate-800 space-y-2\">
-        <button id=\"keyBtn\" class=\"w-full px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition\">Activate key</button>
-        <div class=\"flex gap-2\">
-          <button id=\"loginBtn\" class=\"flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition\">Admin login</button>
-          <button id=\"logoutBtn\" class=\"hidden flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition\">Logout</button>
+      <nav id="convoList" class="flex-1 overflow-y-auto px-3 space-y-1"></nav>
+      <div class="p-5 border-t border-slate-200 dark:border-slate-800 space-y-2">
+        <button id="keyBtn" class="w-full px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Activate key</button>
+        <div class="flex gap-2">
+          <button id="loginBtn" class="flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Admin login</button>
+          <button id="logoutBtn" class="hidden flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Logout</button>
         </div>
       </div>
     </aside>
+    <div id="drawerBackdrop" class="md:hidden fixed inset-0 z-30 bg-black/40 hidden"></div>
 
     <!-- Main -->
-    <div class=\"flex-1 flex flex-col\">
-      <header class=\"sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800\">
-        <div class=\"max-w-6xl mx-auto px-4 py-3 flex items-center justify-between\">
-          <div class=\"flex items-center gap-3\">
-            <button id=\"mobileMenu\" class=\"md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10\">☰</button>
-            <h1 class=\"text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600\">AIChatPal</h1>
-            <span class=\"text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-brand-600/15 to-purple-600/15 text-brand-700 dark:text-brand-200 border border-brand-500/20\">Gemini</span>
-            <span id=\"adminBadge\" class=\"hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30\">Admin</span>
+    <div class="flex-1 flex flex-col">
+      <header class="sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button id="mobileMenu" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
+            <h1 class="text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">AIChatPal</h1>
+            <span class="text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-brand-600/15 to-purple-600/15 text-brand-700 dark:text-brand-200 border border-brand-500/20">Gemini</span>
+            <span id="adminBadge" class="hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">Admin</span>
           </div>
-          <div class=\"flex items-center gap-2\">
-            <button id=\"newChatBtnTop\" class=\"px-3 py-2 rounded-lg bg-gradient-to-r from-brand-600/20 to-purple-600/20 text-brand-700 dark:text-brand-200 hover:from-brand-600/30 hover:to-purple-600/30 transition\">New chat</button>
-            <button id=\"keyBtnTop\" class=\"px-3 py-2 rounded-lg bg-gradient-to-r from-pink-600/20 to-orange-600/20 text-pink-700 dark:text-pink-200 hover:from-pink-600/30 hover:to-orange-600/30 transition\">Activate key</button>
+          <div class="flex items-center gap-2">
+            <button id="newChatBtnTop" class="px-3 py-2 rounded-lg lux-gradient text-white shadow-elevated hover:brightness-110 transition"><span class="inline-flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span>New chat</span></span></button>
+            <button id="keyBtnTop" class="px-3 py-2 rounded-lg bg-gradient-to-r from-pink-600/20 to-orange-600/20 text-pink-700 dark:text-pink-200 hover:from-pink-600/30 hover:to-orange-600/30 transition">Activate key</button>
           </div>
         </div>
       </header>
 
-      <main class=\"flex-1\">
-        <div class=\"max-w-6xl mx-auto p-4 grid grid-cols-1\">
-          <div id=\"chat\" class=\"scroll-area overflow-y-auto rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-5 md:p-6 space-y-4 shadow-elevated\"></div>
-          <div class=\"mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-3 md:p-4 shadow-elevated\">
-            <div class=\"flex items-end gap-2\">
-              <div class=\"flex-1\">
-                <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 md:p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500\"></textarea>
-                <div class=\"mt-2 flex items-center justify-between text-xs text-slate-500\">
-                  <div class=\"flex items-center gap-2\">
-                    <span class=\"hidden sm:inline\">Shift+Enter for new line</span>
+      <main class="flex-1">
+        <div class="max-w-6xl mx-auto p-4 grid grid-cols-1">
+          <div id="chat" class="scroll-area overflow-y-auto rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-4 md:p-6 space-y-4 md:space-y-5 shadow-elevated"></div>
+          <div class="mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-3 md:p-4 shadow-elevated mobile-safe-bottom">
+            <div class="flex items-end gap-2">
+              <div class="flex-1">
+                <textarea id="input" rows="2" placeholder="Type your message..." class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 md:p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400"></textarea>
+                <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+                  <div class="flex items-center gap-2">
+                    <span class="hidden sm:inline">Shift+Enter for new line</span>
                   </div>
-                  <p id=\"limit\" class=\"px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300\"></p>
+                  <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
                 </div>
               </div>
-              <button id=\"send\" class=\"h-12 md:h-12 px-5 md:px-6 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:from-brand-500 hover:to-purple-500 disabled:opacity-50 shadow-elevated transition\">Send</button>
+              <button id="send" class="h-12 md:h-12 px-5 md:px-6 rounded-xl lux-gradient text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated transition"><span class="inline-flex items-center gap-2"><span>Send</span><i data-lucide="arrow-right" class="w-4 h-4"></i></span></button>
             </div>
           </div>
         </div>
 
-        <button id=\"fabNewChat\" class=\"md:hidden fixed bottom-5 right-5 h-12 w-12 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">＋</button>
-        <button id=\"scrollBottom\" class=\"hidden fixed bottom-24 right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">↓</button>
+        <button id="fabNewChat" class="md:hidden fixed safe-fab right-5 h-12 w-12 rounded-full shadow-elevated text-white lux-gradient flex items-center justify-center"><i data-lucide="plus" class="w-6 h-6"></i></button>
+        <button id="scrollBottom" class="hidden fixed safe-fab right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white lux-gradient flex items-center justify-center"><i data-lucide="arrow-down" class="w-5 h-5"></i></button>
       </main>
 
-      <footer class=\"text-center text-xs text-slate-500 py-4\">Powered by Gemini</footer>
+      <footer class="text-center text-xs text-slate-500 py-4">Powered by Gemini</footer>
     </div>
   </div>
 
   <!-- Toasts -->
-  <div id=\"toasts\" class=\"fixed bottom-5 left-1/2 -translate-x-1/2 space-y-2 z-50\"></div>
+  <div id="toasts" class="fixed bottom-5 left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
 
   <!-- External libs -->
-  <script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>
-  <script src=\"https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js\"></script>
-  <script src=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js\"></script>
-  <script src=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js\"></script>
-  <script src=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js\"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <script>
   // State and elements
@@ -607,9 +664,19 @@ HTML_INDEX = """
     Prism.highlightAllUnder(wrapper);
     // Add copy buttons to code blocks
     wrapper.querySelectorAll('pre').forEach(pre => {
+      const codeEl = pre.querySelector('code');
+      const lang = (codeEl?.className || '').split('language-')[1] || '';
+      // Badge
+      if (lang) {
+        const badge = document.createElement('span');
+        badge.className = 'code-badge';
+        badge.textContent = lang.toUpperCase();
+        pre.appendChild(badge);
+      }
+      // Copy button
       const btn = document.createElement('button');
-      btn.textContent = 'Copy';
-      btn.className = 'absolute top-2 right-2 text-[11px] px-2 py-1 rounded bg-black/50 hover:bg-black/70 text-white';
+      btn.className = 'copy-btn';
+      btn.innerHTML = '<span>Copy</span>';
       btn.addEventListener('click', () => {
         const code = pre.querySelector('code')?.innerText || '';
         navigator.clipboard.writeText(code).then(() => showToast('Code copied', 'success'));
@@ -628,9 +695,9 @@ HTML_INDEX = """
   // Message rendering
   function avatarFor(role) {
     if (role === 'user') {
-      return '<div class=\"h-8 w-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-600\"></div>';
+      return '<div class="h-8 w-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-600"></div>';
     }
-    return '<div class=\"h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 shadow-elevated\"></div>';
+    return '<div class="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 shadow-elevated"></div>';
   }
 
   function renderMessage(role, content) {
@@ -639,8 +706,8 @@ HTML_INDEX = """
 
     const bubble = document.createElement('div');
     const isUser = role === 'user';
-    bubble.className = 'msg rounded-2xl px-4 py-3 shadow ' + (isUser ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white' : 'bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70');
-    bubble.innerHTML = isUser ? `<div>${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-slate dark:prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+    bubble.className = 'msg rounded-2xl px-4 py-3 md:px-5 md:py-3.5 shadow ' + (isUser ? 'lux-bubble-user' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-sm');
+    bubble.innerHTML = isUser ? `<div class="tracking-tight">${content.replace(/</g,'&lt;')}</div>` : `<div class="prose prose-slate dark:prose-invert max-w-none md:prose-lg prose-p:leading-relaxed prose-headings:tracking-tight prose-headings:font-semibold">${renderMarkdownToHtml(content)}</div>`;
 
     if (isUser) {
       row.appendChild(bubble);
@@ -667,7 +734,7 @@ HTML_INDEX = """
     row.className = 'w-full flex items-start gap-3 justify-start';
     const bubble = document.createElement('div');
     bubble.className = 'msg rounded-2xl px-4 py-3 shadow italic text-slate-500 bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70';
-    bubble.innerHTML = '<div class=\"flex items-center gap-1\"><span class=\"typing-dot\"></span><span class=\"typing-dot\"></span><span class=\"typing-dot\"></span></div>';
+    bubble.innerHTML = '<div class="flex items-center gap-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
     row.appendChild(createElementFromHTML(avatarFor('assistant')));
     row.appendChild(bubble);
     chat.appendChild(row);
@@ -685,7 +752,7 @@ HTML_INDEX = """
         const a = document.createElement('button');
         a.className = 'w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 flex items-center justify-between border border-transparent ' + (state.current === c.id ? 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70' : '');
         const left = document.createElement('div');
-        left.innerHTML = `<div class=\"text-sm font-medium truncate\">${(c.title || 'Untitled')}</div><div class=\"text-[11px] text-slate-500\">${fmtTime(c.updated_at)}</div>`;
+        left.innerHTML = `<div class="text-sm font-medium truncate">${(c.title || 'Untitled')}</div><div class="text-[11px] text-slate-500">${fmtTime(c.updated_at)}</div>`;
         a.appendChild(left);
         a.addEventListener('click', async () => { await selectConversation(c.id); });
         convoList.appendChild(a);
@@ -723,16 +790,16 @@ HTML_INDEX = """
       const overlay = document.createElement('div');
       overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
       overlay.innerHTML = `
-        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
-          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
-            <div class=\"text-lg font-semibold\">${title}</div>
-            <div class=\"text-sm text-slate-500\">${description}</div>
+        <div class="w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
+          <div class="p-4 border-b border-slate-200/70 dark:border-slate-800/70">
+            <div class="text-lg font-semibold">${title}</div>
+            <div class="text-sm text-slate-500">${description}</div>
           </div>
-          <div class=\"p-4 space-y-3\">
-            <input id=\"_prompt_input\" type=\"${type}\" placeholder=\"${placeholder}\" class=\"w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500\" />
-            <div class=\"flex justify-end gap-2\">
-              <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
-              <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white ${confirmVariant==='danger' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500'}\">${confirmText}</button>
+          <div class="p-4 space-y-3">
+            <input id="_prompt_input" type="${type}" placeholder="${placeholder}" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <div class="flex justify-end gap-2">
+              <button id="_cancel" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Cancel</button>
+              <button id="_ok" class="px-3 py-2 rounded-xl text-white ${confirmVariant==='danger' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500'}">${confirmText}</button>
             </div>
           </div>
         </div>`;
@@ -750,14 +817,14 @@ HTML_INDEX = """
       const overlay = document.createElement('div');
       overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
       overlay.innerHTML = `
-        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
-          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
-            <div class=\"text-lg font-semibold\">${title}</div>
-            <div class=\"text-sm text-slate-500\">${description}</div>
+        <div class="w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
+          <div class="p-4 border-b border-slate-200/70 dark:border-slate-800/70">
+            <div class="text-lg font-semibold">${title}</div>
+            <div class="text-sm text-slate-500">${description}</div>
           </div>
-          <div class=\"p-4 flex justify-end gap-2\">
-            <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
-            <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white bg-rose-600 hover:bg-rose-500\">${confirmText}</button>
+          <div class="p-4 flex justify-end gap-2">
+            <button id="_cancel" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Cancel</button>
+            <button id="_ok" class="px-3 py-2 rounded-xl text-white bg-rose-600 hover:bg-rose-500">${confirmText}</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
@@ -769,12 +836,12 @@ HTML_INDEX = """
 
   function renderEmptyState() {
     chat.innerHTML = `
-      <div class=\"w-full grid place-items-center\">
-        <div class=\"max-w-2xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
-          <div class=\"inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-elevated\">✨</div>
-          <h2 class=\"text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600\">Welcome to AIChatPal</h2>
-          <p class=\"text-slate-600 dark:text-slate-300\">Start a conversation and experience fast, beautiful AI answers with code highlighting, dark mode, and more.</p>
-          <div><button class=\"px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white hover:from-brand-500 hover:to-purple-500\" onclick=\"document.getElementById('input').focus()\">Start typing</button></div>
+      <div class="w-full grid place-items-center">
+        <div class="max-w-2xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
+          <div class="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-elevated">✨</div>
+          <h2 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">Welcome to AIChatPal</h2>
+          <p class="text-slate-600 dark:text-slate-300">Start a conversation and experience fast, beautiful AI answers with code highlighting, dark mode, and more.</p>
+          <div><button class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white hover:from-brand-500 hover:to-purple-500" onclick="document.getElementById('input').focus()">Start typing</button></div>
         </div>
       </div>`;
   }
@@ -804,7 +871,7 @@ HTML_INDEX = """
     renderMessage('user', text);
     sendBtn.disabled = true;
     const previous = sendBtn.innerHTML;
-    sendBtn.innerHTML = '<span class=\"inline-flex items-center gap-2\"><span class=\"spinner animate-spin\"></span> Sending…</span>';
+    sendBtn.innerHTML = '<span class="inline-flex items-center gap-2"><span class="spinner animate-spin"></span> Sending…</span>';
     const thinkingNode = renderThinking();
     try {
       const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
@@ -876,14 +943,30 @@ HTML_INDEX = """
 
   logoutBtn.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await loadConversations(); await loadHistory(); showToast('Logged out','success'); });
 
-  mobileMenuBtn.addEventListener('click', () => { document.querySelector('aside').classList.toggle('hidden'); });
+  mobileMenuBtn.addEventListener('click', () => {
+    const aside = document.querySelector('aside');
+    const backdrop = document.getElementById('drawerBackdrop');
+    const willShow = aside.classList.contains('hidden');
+    aside.classList.toggle('hidden');
+    backdrop?.classList.toggle('hidden');
+    document.body.classList.toggle('drawer-open', willShow);
+  });
+  document.getElementById('drawerBackdrop')?.addEventListener('click', () => {
+    const aside = document.querySelector('aside');
+    const backdrop = document.getElementById('drawerBackdrop');
+    aside.classList.add('hidden');
+    backdrop?.classList.add('hidden');
+    document.body.classList.remove('drawer-open');
+  });
   themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
   if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
   if (convSearch) convSearch.addEventListener('input', renderConversations);
   if (scrollBottomBtn) scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
   if (chat) chat.addEventListener('scroll', updateScrollBtn);
 
-  Promise.all([loadConversations(), loadHistory()]);
+  Promise.all([loadConversations(), loadHistory()]).then(() => {
+    if (window.lucide) { window.lucide.createIcons(); }
+  });
   </script>
 </body>
 </html>
