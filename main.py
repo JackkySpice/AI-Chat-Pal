@@ -498,6 +498,20 @@ HTML_INDEX = """
       .glass { backdrop-filter: none; background: rgba(255,255,255,0.75); }
       .dark .glass { background: rgba(17,24,39,0.75); }
     }
+    /* Deluxe dark theme backgrounds */
+    body { background-color: #f8fafc; }
+    .dark body { background-color: #0b1020; }
+
+    /* Elevated code blocks */
+    .prose pre { position: relative; border-radius: 14px; overflow: auto; border: 1px solid rgba(15,23,42,0.12); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(2,6,23,0.04); }
+    .prose pre code { background: transparent !important; }
+    .prose pre { background: rgba(248,250,252,0.9); }
+    .dark .prose pre { background: rgba(15,23,42,0.9); border-color: rgba(148,163,184,0.18); box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px -12px rgba(2,6,23,0.35); }
+    .code-badge { position: absolute; top: 8px; left: 8px; font-size: 10px; line-height: 1; letter-spacing: .04em; padding: 4px 6px; border-radius: 999px; background: rgba(2,6,23,0.06); color: #0f172a; border: 1px solid rgba(2,6,23,0.08); }
+    .dark .code-badge { background: rgba(255,255,255,0.08); color: #e2e8f0; border-color: rgba(255,255,255,0.10); }
+    .copy-btn { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; padding: 4px 8px; border-radius: 10px; color: #ffffff; background: rgba(2,6,23,0.6); }
+    .copy-btn:hover { filter: brightness(1.1); }
+    .dark .copy-btn { background: rgba(255,255,255,0.12); }
   </style>
 </head>
 <body class="font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100">
@@ -650,9 +664,19 @@ HTML_INDEX = """
     Prism.highlightAllUnder(wrapper);
     // Add copy buttons to code blocks
     wrapper.querySelectorAll('pre').forEach(pre => {
+      const codeEl = pre.querySelector('code');
+      const lang = (codeEl?.className || '').split('language-')[1] || '';
+      // Badge
+      if (lang) {
+        const badge = document.createElement('span');
+        badge.className = 'code-badge';
+        badge.textContent = lang.toUpperCase();
+        pre.appendChild(badge);
+      }
+      // Copy button
       const btn = document.createElement('button');
-      btn.textContent = 'Copy';
-      btn.className = 'absolute top-2 right-2 text-[11px] px-2 py-1 rounded bg-black/50 hover:bg-black/70 text-white';
+      btn.className = 'copy-btn';
+      btn.innerHTML = '<span>Copy</span>';
       btn.addEventListener('click', () => {
         const code = pre.querySelector('code')?.innerText || '';
         navigator.clipboard.writeText(code).then(() => showToast('Code copied', 'success'));
@@ -940,7 +964,9 @@ HTML_INDEX = """
   if (scrollBottomBtn) scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
   if (chat) chat.addEventListener('scroll', updateScrollBtn);
 
-  Promise.all([loadConversations(), loadHistory()]).then(() => { if (window.lucide) { window.lucide.createIcons(); } });
+  Promise.all([loadConversations(), loadHistory()]).then(() => {
+    if (window.lucide) { window.lucide.createIcons(); }
+  });
   </script>
 </body>
 </html>
