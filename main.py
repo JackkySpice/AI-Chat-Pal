@@ -449,6 +449,7 @@ HTML_INDEX = """
     :root { color-scheme: light dark; }
     .glass { backdrop-filter: saturate(140%) blur(14px); background: rgba(255,255,255,0.55); }
     .dark .glass { background: rgba(17,24,39,0.5); }
+    .noise-overlay { position: fixed; inset: 0; pointer-events: none; z-index: -5; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.025"/></svg>'); background-repeat: repeat; }
     .scroll-area { height: calc(100vh - 240px); }
     @supports (height: 100dvh) {
       .scroll-area { height: calc(100dvh - 220px); }
@@ -506,6 +507,7 @@ HTML_INDEX = """
     <div class="absolute top-1/3 -right-16 h-72 w-72 rounded-full blur-3xl opacity-30 dark:opacity-25 bg-gradient-to-br from-pink-400 to-orange-400 [animation-delay:4s] animate-float"></div>
     <div class="absolute bottom-0 left-1/3 h-64 w-64 rounded-full blur-3xl opacity-25 dark:opacity-20 bg-gradient-to-br from-emerald-400 to-teal-500 [animation-delay:8s] animate-float"></div>
   </div>
+  <div class="noise-overlay" aria-hidden="true"></div>
   <div class="min-h-[100svh] flex text-[15px] md:text-base leading-relaxed">
     <!-- Sidebar -->
     <aside class="hidden md:flex fixed md:static inset-y-0 left-0 z-40 w-80 flex-col border-r border-slate-200 dark:border-slate-800 glass">
@@ -523,10 +525,10 @@ HTML_INDEX = """
         </button>
       </div>
       <div class="px-5">
-        <button id="newChatBtn" class="w-full mb-4 px-4 py-2.5 rounded-xl lux-gradient text-white shadow-elevated transition hover:brightness-110">New chat</button>
+        <button id="newChatBtn" class="w-full mb-4 px-4 py-2.5 rounded-xl lux-gradient text-white shadow-elevated transition hover:brightness-110"><span class="inline-flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span>New chat</span></span></button>
         <div class="relative mb-4">
           <input id="convSearch" placeholder="Search chats" class="w-full px-10 py-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔎</div>
+          <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></div>
         </div>
         <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Saved chats</div>
       </div>
@@ -546,13 +548,13 @@ HTML_INDEX = """
       <header class="sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <button id="mobileMenu" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10">☰</button>
+            <button id="mobileMenu" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
             <h1 class="text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">AIChatPal</h1>
             <span class="text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-brand-600/15 to-purple-600/15 text-brand-700 dark:text-brand-200 border border-brand-500/20">Gemini</span>
             <span id="adminBadge" class="hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">Admin</span>
           </div>
           <div class="flex items-center gap-2">
-            <button id="newChatBtnTop" class="px-3 py-2 rounded-lg lux-gradient text-white shadow-elevated hover:brightness-110 transition">New chat</button>
+            <button id="newChatBtnTop" class="px-3 py-2 rounded-lg lux-gradient text-white shadow-elevated hover:brightness-110 transition"><span class="inline-flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span>New chat</span></span></button>
             <button id="keyBtnTop" class="px-3 py-2 rounded-lg bg-gradient-to-r from-pink-600/20 to-orange-600/20 text-pink-700 dark:text-pink-200 hover:from-pink-600/30 hover:to-orange-600/30 transition">Activate key</button>
           </div>
         </div>
@@ -572,13 +574,13 @@ HTML_INDEX = """
                   <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
                 </div>
               </div>
-              <button id="send" class="h-12 md:h-12 px-5 md:px-6 rounded-xl lux-gradient text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated transition">Send</button>
+              <button id="send" class="h-12 md:h-12 px-5 md:px-6 rounded-xl lux-gradient text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated transition"><span class="inline-flex items-center gap-2"><span>Send</span><i data-lucide="arrow-right" class="w-4 h-4"></i></span></button>
             </div>
           </div>
         </div>
 
-        <button id="fabNewChat" class="md:hidden fixed safe-fab right-5 h-12 w-12 rounded-full shadow-elevated text-white lux-gradient">＋</button>
-        <button id="scrollBottom" class="hidden fixed safe-fab right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white lux-gradient">↓</button>
+        <button id="fabNewChat" class="md:hidden fixed safe-fab right-5 h-12 w-12 rounded-full shadow-elevated text-white lux-gradient flex items-center justify-center"><i data-lucide="plus" class="w-6 h-6"></i></button>
+        <button id="scrollBottom" class="hidden fixed safe-fab right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white lux-gradient flex items-center justify-center"><i data-lucide="arrow-down" class="w-5 h-5"></i></button>
       </main>
 
       <footer class="text-center text-xs text-slate-500 py-4">Powered by Gemini</footer>
@@ -594,6 +596,7 @@ HTML_INDEX = """
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <script>
   // State and elements
@@ -937,7 +940,7 @@ HTML_INDEX = """
   if (scrollBottomBtn) scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
   if (chat) chat.addEventListener('scroll', updateScrollBtn);
 
-  Promise.all([loadConversations(), loadHistory()]);
+  Promise.all([loadConversations(), loadHistory()]).then(() => { if (window.lucide) { window.lucide.createIcons(); } });
   </script>
 </body>
 </html>
