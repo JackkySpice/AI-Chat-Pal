@@ -470,6 +470,33 @@ HTML_INDEX = """
     ::-webkit-scrollbar { width: 10px; height: 10px }
     ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #475569, #1f2937); border-radius: 999px }
     .dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #94a3b8, #475569) }
+
+    /* Luxury palette and utilities */
+    :root {
+      --lux-1: #4f46e5; /* indigo-600 */
+      --lux-2: #7c3aed; /* violet-600 */
+      --lux-3: #c026d3; /* fuchsia-600 (muted) */
+    }
+    .dark:root {
+      --lux-1: #6366f1;
+      --lux-2: #7c3aed;
+      --lux-3: #d946ef;
+    }
+    .lux-gradient { background-image: linear-gradient(90deg, var(--lux-1), var(--lux-2), var(--lux-3)); }
+    .lux-bubble-user {
+      background-image: linear-gradient(90deg, var(--lux-1), var(--lux-2), var(--lux-3));
+      color: #fff;
+      box-shadow: 0 10px 30px -12px rgba(2,6,23,0.35);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* Reduced motion/softer visuals */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+      .typing-dot { animation: none !important; opacity: .5; }
+      .glass { backdrop-filter: none; background: rgba(255,255,255,0.75); }
+      .dark .glass { background: rgba(17,24,39,0.75); }
+    }
   </style>
 </head>
 <body class="font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100">
@@ -496,7 +523,7 @@ HTML_INDEX = """
         </button>
       </div>
       <div class="px-5">
-        <button id="newChatBtn" class="w-full mb-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white shadow-elevated transition">New chat</button>
+        <button id="newChatBtn" class="w-full mb-4 px-4 py-2.5 rounded-xl lux-gradient text-white shadow-elevated transition hover:brightness-110">New chat</button>
         <div class="relative mb-4">
           <input id="convSearch" placeholder="Search chats" class="w-full px-10 py-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" />
           <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔎</div>
@@ -525,7 +552,7 @@ HTML_INDEX = """
             <span id="adminBadge" class="hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">Admin</span>
           </div>
           <div class="flex items-center gap-2">
-            <button id="newChatBtnTop" class="px-3 py-2 rounded-lg bg-gradient-to-r from-brand-600/20 to-purple-600/20 text-brand-700 dark:text-brand-200 hover:from-brand-600/30 hover:to-purple-600/30 transition">New chat</button>
+            <button id="newChatBtnTop" class="px-3 py-2 rounded-lg lux-gradient text-white shadow-elevated hover:brightness-110 transition">New chat</button>
             <button id="keyBtnTop" class="px-3 py-2 rounded-lg bg-gradient-to-r from-pink-600/20 to-orange-600/20 text-pink-700 dark:text-pink-200 hover:from-pink-600/30 hover:to-orange-600/30 transition">Activate key</button>
           </div>
         </div>
@@ -545,13 +572,13 @@ HTML_INDEX = """
                   <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
                 </div>
               </div>
-              <button id="send" class="h-12 md:h-12 px-5 md:px-6 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:from-brand-500 hover:to-purple-500 disabled:opacity-50 shadow-elevated transition">Send</button>
+              <button id="send" class="h-12 md:h-12 px-5 md:px-6 rounded-xl lux-gradient text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated transition">Send</button>
             </div>
           </div>
         </div>
 
-        <button id="fabNewChat" class="md:hidden fixed safe-fab right-5 h-12 w-12 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600">＋</button>
-        <button id="scrollBottom" class="hidden fixed safe-fab right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600">↓</button>
+        <button id="fabNewChat" class="md:hidden fixed safe-fab right-5 h-12 w-12 rounded-full shadow-elevated text-white lux-gradient">＋</button>
+        <button id="scrollBottom" class="hidden fixed safe-fab right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white lux-gradient">↓</button>
       </main>
 
       <footer class="text-center text-xs text-slate-500 py-4">Powered by Gemini</footer>
@@ -652,7 +679,7 @@ HTML_INDEX = """
 
     const bubble = document.createElement('div');
     const isUser = role === 'user';
-    bubble.className = 'msg rounded-2xl px-4 py-3 md:px-5 md:py-3.5 shadow ' + (isUser ? 'bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600 text-white shadow-elevated ring-1 ring-white/10' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-sm');
+    bubble.className = 'msg rounded-2xl px-4 py-3 md:px-5 md:py-3.5 shadow ' + (isUser ? 'lux-bubble-user' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-sm');
     bubble.innerHTML = isUser ? `<div class="tracking-tight">${content.replace(/</g,'&lt;')}</div>` : `<div class="prose prose-slate dark:prose-invert max-w-none md:prose-lg prose-p:leading-relaxed prose-headings:tracking-tight prose-headings:font-semibold">${renderMarkdownToHtml(content)}</div>`;
 
     if (isUser) {
