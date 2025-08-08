@@ -2,17 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>Chat UI – Thoughts + Output</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
   </head>
   <body>
     <div class="app">
-      <aside class="sidebar" aria-label="Conversations sidebar">
-        <div class="sidebar-header">
+             <aside class="sidebar" id="sidebar" aria-label="Conversations sidebar">
+         <div class="sidebar-header">
           <div class="brand">
             <div class="brand-mark">AI</div>
             <div class="brand-text">Assistant</div>
@@ -26,12 +27,21 @@
       </aside>
       <main class="main">
         <header class="topbar">
+          <button class="btn icon" id="toggle-sidebar-btn" aria-label="Toggle sidebar" aria-controls="sidebar">☰</button>
           <div class="title">Chat</div>
           <div class="topbar-actions">
             <label class="switch" title="Show reasoning summary (not private chain-of-thought)">
               <input type="checkbox" id="toggle-thoughts" checked />
               <span>Show Thoughts</span>
             </label>
+            <label class="switch" title="Press Enter to send (Shift+Enter for newline)">
+              <input type="checkbox" id="toggle-enter-send" checked />
+              <span>Enter to send</span>
+            </label>
+            <button class="btn icon" id="settings-btn" aria-label="Open settings">⚙️</button>
+            <div class="search">
+              <input type="search" id="topbar-search" placeholder="Search…" aria-label="Search messages" />
+            </div>
           </div>
         </header>
 
@@ -40,11 +50,21 @@
         </section>
 
         <footer class="composer" aria-label="Message composer">
+          <div class="suggestions" id="suggestions">
+            <button class="btn ghost chip" data-suggest="Summarize this">Summarize</button>
+            <button class="btn ghost chip" data-suggest="Polish the writing">Polish</button>
+            <button class="btn ghost chip" data-suggest="Explain step by step">Explain</button>
+            <button class="btn ghost chip" data-suggest="Translate to Spanish">Translate</button>
+          </div>
           <div class="composer-inner">
             <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true"></textarea>
             <div class="composer-actions">
-              <button class="btn ghost" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
-              <button class="btn primary" id="send-btn" aria-label="Send">Send</button>
+              <input type="file" id="file-input" multiple hidden />
+              <button class="btn ghost icon" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
+              <button class="btn primary" id="send-btn" aria-label="Send">
+                <span class="btn-text">Send</span>
+                <span class="btn-icon">➤</span>
+              </button>
             </div>
           </div>
           <div class="disclaimer">
@@ -54,6 +74,44 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
     <script src="./app.js"></script>
+
+    <!-- Settings panel -->
+    <div class="settings" id="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true">
+      <div class="settings-dialog">
+        <div class="settings-header">
+          <div id="settings-title">Settings</div>
+          <button class="btn icon" id="settings-close-btn" aria-label="Close settings">✕</button>
+        </div>
+            <div class="settings-content">
+      <div class="group">
+        <div class="label">Theme</div>
+        <label><input type="radio" name="theme" id="theme-light" value="light"> Light</label>
+        <label><input type="radio" name="theme" id="theme-dark" value="dark"> Dark</label>
+        <label><input type="radio" name="theme" id="theme-amoled" value="amoled"> AMOLED</label>
+      </div>
+      <label class="switch" title="Use decorative wallpaper in chat area">
+        <input type="checkbox" id="toggle-wallpaper" />
+        <span>Wallpaper</span>
+      </label>
+      <label class="switch" title="Reduce spacing for denser layout">
+        <input type="checkbox" id="toggle-density" />
+        <span>Compact mode</span>
+      </label>
+      <div class="group">
+        <div class="label">Export chat</div>
+        <div class="actions">
+          <button class="btn" id="export-json-btn">Export JSON</button>
+          <button class="btn" id="export-md-btn">Export Markdown</button>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
   </body>
 </html>
