@@ -399,247 +399,441 @@ HTML_INDEX = """
 <head>
   <meta charset=\"utf-8\"> 
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> 
-  <title>AIChatPal</title>
+  <title>AIChatPal · Premium</title>
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
+  <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">
   <script src=\"https://cdn.tailwindcss.com\"></script>
+  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css\"/>
   <script>
-    tailwind.config = { theme: { extend: { colors: { brand: { 50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81' }}}}};
+    tailwind.config = {
+      theme: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'Apple Color Emoji', 'Segoe UI Emoji']
+        },
+        extend: {
+          colors: {
+            brand: {
+              50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8',
+              500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81'
+            }
+          },
+          boxShadow: {
+            elevated: '0 10px 30px -12px rgba(2,6,23,0.35)'
+          },
+          keyframes: {
+            shimmer: { '0%': { backgroundPosition: '0% 50%' }, '100%': { backgroundPosition: '100% 50%'} },
+            fadeInUp: { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+          },
+          animation: {
+            shimmer: 'shimmer 2s ease-in-out infinite',
+            fadeInUp: 'fadeInUp .25s ease-out both'
+          }
+        }
+      },
+      darkMode: 'class'
+    };
   </script>
   <style>
-    .msg { max-width: 75%; }
-    .scroll-area { height: calc(100vh - 200px); }
-    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.7); }
-    .dark .glass { background: rgba(17,24,39,0.6); }
+    :root { color-scheme: light dark; }
+    .glass { backdrop-filter: saturate(140%) blur(14px); background: rgba(255,255,255,0.55); }
+    .dark .glass { background: rgba(17,24,39,0.5); }
+    .scroll-area { height: calc(100vh - 240px); }
+    .msg { max-width: 72ch; }
+    ::-webkit-scrollbar { width: 10px; height: 10px }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #475569, #1f2937); border-radius: 999px }
+    .dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #94a3b8, #475569) }
   </style>
 </head>
-<body class=\"bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100\">
+<body class=\"font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100\">
   <div class=\"min-h-screen flex\">
     <!-- Sidebar -->
-    <aside class=\"hidden md:flex w-72 flex-col border-r border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 glass\">
-      <div class=\"p-4 flex items-center justify-between\">
-        <div class=\"font-bold text-lg\">AIChatPal</div>
-        <button id=\"themeToggle\" class=\"px-2 py-1 text-xs rounded bg-slate-200 dark:bg-slate-700\">Theme</button>
+    <aside class=\"hidden md:flex w-80 flex-col border-r border-slate-200 dark:border-slate-800 glass\">
+      <div class=\"p-5 flex items-center justify-between\">
+        <div class=\"flex items-center gap-3\">
+          <div class=\"h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 shadow-elevated\"></div>
+          <div>
+            <div class=\"font-extrabold tracking-tight\">AIChatPal</div>
+            <div class=\"text-xs text-slate-500 dark:text-slate-400\">Your premium AI chat</div>
+          </div>
+        </div>
+        <button id=\"themeToggle\" class=\"px-2 py-1 text-xs rounded-lg bg-slate-200/70 dark:bg-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition\">
+          <span class=\"inline dark:hidden\">☀️</span>
+          <span class=\"hidden dark:inline\">🌙</span>
+        </button>
       </div>
-      <div class=\"px-4\">
-        <button id=\"newChatBtn\" class=\"w-full mb-3 px-3 py-2 rounded bg-brand-600 hover:bg-brand-700 text-white shadow\">New chat</button>
-        <div class=\"text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2\">Saved chats</div>
+      <div class=\"px-5\">
+        <button id=\"newChatBtn\" class=\"w-full mb-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white shadow-elevated transition\">New chat</button>
+        <div class=\"relative mb-4\">
+          <input id=\"convSearch\" placeholder=\"Search chats\" class=\"w-full px-10 py-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500\" />
+          <div class=\"absolute left-3 top-1/2 -translate-y-1/2 text-slate-400\">🔎</div>
+        </div>
+        <div class=\"text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2\">Saved chats</div>
       </div>
-      <nav id=\"convoList\" class=\"flex-1 overflow-y-auto px-2 space-y-1\"></nav>
-      <div class=\"p-4 border-t border-slate-200 dark:border-slate-700 space-y-2\">
-        <button id=\"keyBtn\" class=\"w-full px-3 py-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700\">Activate key</button>
-        <button id=\"loginBtn\" class=\"w-full px-3 py-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700\">Admin login</button>
-        <button id=\"logoutBtn\" class=\"hidden w-full px-3 py-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700\">Logout</button>
+      <nav id=\"convoList\" class=\"flex-1 overflow-y-auto px-3 space-y-1\"></nav>
+      <div class=\"p-5 border-t border-slate-200 dark:border-slate-800 space-y-2\">
+        <button id=\"keyBtn\" class=\"w-full px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition\">Activate key</button>
+        <div class=\"flex gap-2\">
+          <button id=\"loginBtn\" class=\"flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition\">Admin login</button>
+          <button id=\"logoutBtn\" class=\"hidden flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition\">Logout</button>
+        </div>
       </div>
     </aside>
 
     <!-- Main -->
     <div class=\"flex-1 flex flex-col\">
-      <header class=\"sticky top-0 z-10 bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600 text-white p-4 shadow\">
-        <div class=\"max-w-5xl mx-auto flex items-center justify-between\">
+      <header class=\"sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800\">
+        <div class=\"max-w-6xl mx-auto px-4 py-3 flex items-center justify-between\">
           <div class=\"flex items-center gap-3\">
-            <button id=\"mobileMenu\" class=\"md:hidden px-3 py-2 rounded bg-white/20\">Menu</button>
-            <h1 class=\"text-xl font-bold\">AIChatPal</h1>
-            <span id=\"adminBadge\" class=\"hidden text-xs px-2 py-1 rounded bg-white/20\">Admin</span>
+            <button id=\"mobileMenu\" class=\"md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10\">☰</button>
+            <h1 class=\"text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600\">AIChatPal</h1>
+            <span id=\"adminBadge\" class=\"hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30\">Admin</span>
           </div>
-          <div class=\"flex gap-2\">
-            <button id=\"newChatBtnTop\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">New chat</button>
-            <button id=\"keyBtnTop\" class=\"px-3 py-1 rounded bg-white/20 hover:bg-white/30\">Activate key</button>
+          <div class=\"flex items-center gap-2\">
+            <button id=\"newChatBtnTop\" class=\"px-3 py-2 rounded-lg bg-gradient-to-r from-brand-600/20 to-purple-600/20 text-brand-700 dark:text-brand-200 hover:from-brand-600/30 hover:to-purple-600/30 transition\">New chat</button>
+            <button id=\"keyBtnTop\" class=\"px-3 py-2 rounded-lg bg-gradient-to-r from-pink-600/20 to-orange-600/20 text-pink-700 dark:text-pink-200 hover:from-pink-600/30 hover:to-orange-600/30 transition\">Activate key</button>
           </div>
         </div>
       </header>
 
       <main class=\"flex-1\">
-        <div class=\"max-w-5xl mx-auto p-4 grid grid-cols-1\">
-          <div id=\"chat\" class=\"scroll-area overflow-y-auto rounded-xl border bg-white/80 dark:bg-slate-900/60 glass p-4 space-y-4 shadow\"></div>
-          <div class=\"mt-4 flex items-end gap-2\">
-            <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"flex-1 rounded-lg border p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900/60 dark:border-slate-700\"></textarea>
-            <button id=\"send\" class=\"h-12 px-5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 shadow\">Send</button>
-          </div>
-          <div class=\"flex items-center justify-between mt-2 text-sm text-slate-500\">
-            <p id=\"limit\"></p>
-            <div class=\"space-x-2\">
-              <button id=\"renameBtn\" class=\"px-3 py-1 rounded border\">Rename</button>
-              <button id=\"deleteBtn\" class=\"px-3 py-1 rounded border\">Delete</button>
+        <div class=\"max-w-6xl mx-auto p-4 grid grid-cols-1\">
+          <div id=\"chat\" class=\"scroll-area overflow-y-auto rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-5 md:p-6 space-y-4 shadow-elevated\"></div>
+          <div class=\"mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-3 md:p-4 shadow-elevated\">
+            <div class=\"flex items-end gap-2\">
+              <div class=\"flex-1\">
+                <textarea id=\"input\" rows=\"2\" placeholder=\"Type your message...\" class=\"w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 md:p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500\"></textarea>
+                <div class=\"mt-2 flex items-center justify-between text-xs text-slate-500\">
+                  <div class=\"flex items-center gap-2\">
+                    <span class=\"hidden sm:inline\">Shift+Enter for new line</span>
+                  </div>
+                  <p id=\"limit\" class=\"px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300\"></p>
+                </div>
+              </div>
+              <button id=\"send\" class=\"h-12 md:h-12 px-5 md:px-6 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:from-brand-500 hover:to-purple-500 disabled:opacity-50 shadow-elevated transition\">Send</button>
             </div>
           </div>
         </div>
+
+        <button id=\"fabNewChat\" class=\"md:hidden fixed bottom-5 right-5 h-12 w-12 rounded-full shadow-elevated text-white bg-gradient-to-br from-brand-600 to-purple-600\">＋</button>
       </main>
 
       <footer class=\"text-center text-xs text-slate-500 py-4\">Powered by Gemini</footer>
     </div>
   </div>
 
-<script>
-const chat = document.getElementById('chat');
-const input = document.getElementById('input');
-const sendBtn = document.getElementById('send');
-const newChatBtn = document.getElementById('newChatBtn');
-const newChatBtnTop = document.getElementById('newChatBtnTop');
-const keyBtn = document.getElementById('keyBtn');
-const keyBtnTop = document.getElementById('keyBtnTop');
-const limitP = document.getElementById('limit');
-const convoList = document.getElementById('convoList');
-const renameBtn = document.getElementById('renameBtn');
-const deleteBtn = document.getElementById('deleteBtn');
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const adminBadge = document.getElementById('adminBadge');
-const themeToggle = document.getElementById('themeToggle');
+  <!-- Toasts -->
+  <div id=\"toasts\" class=\"fixed bottom-5 left-1/2 -translate-x-1/2 space-y-2 z-50\"></div>
 
-let state = { conversations: [], current: null, is_admin: false };
+  <!-- External libs -->
+  <script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>
+  <script src=\"https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js\"></script>
+  <script src=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js\"></script>
+  <script src=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js\"></script>
+  <script src=\"https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js\"></script>
 
-function fmtTime(ts) {
-  try { return new Date(ts).toLocaleString(); } catch { return ''; }
-}
+  <script>
+  // State and elements
+  const chat = document.getElementById('chat');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('send');
+  const newChatBtn = document.getElementById('newChatBtn');
+  const newChatBtnTop = document.getElementById('newChatBtnTop');
+  const keyBtn = document.getElementById('keyBtn');
+  const keyBtnTop = document.getElementById('keyBtnTop');
+  const limitP = document.getElementById('limit');
+  const convoList = document.getElementById('convoList');
+  const renameBtn = document.getElementById('renameBtn'); // legacy id not present; guarded below
+  const deleteBtn = document.getElementById('deleteBtn'); // legacy id not present; guarded below
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const adminBadge = document.getElementById('adminBadge');
+  const themeToggle = document.getElementById('themeToggle');
+  const mobileMenuBtn = document.getElementById('mobileMenu');
+  const convSearch = document.getElementById('convSearch');
+  const fabNewChat = document.getElementById('fabNewChat');
 
-function renderMessage(role, content) {
-  const row = document.createElement('div');
-  row.className = 'w-full flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
-  const bubble = document.createElement('div');
-  bubble.className = 'msg rounded-2xl px-4 py-2 shadow ' + (role === 'user' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800');
-  bubble.textContent = content;
-  row.appendChild(bubble);
-  chat.appendChild(row);
-  chat.scrollTop = chat.scrollHeight;
-}
+  let state = { conversations: [], current: null, is_admin: false };
 
-function renderThinking() {
-  const row = document.createElement('div');
-  row.className = 'w-full flex justify-start';
-  const bubble = document.createElement('div');
-  bubble.className = 'msg rounded-2xl px-4 py-2 shadow italic text-slate-500 bg-slate-100 dark:bg-slate-800';
-  bubble.textContent = 'Thinking…';
-  row.appendChild(bubble);
-  chat.appendChild(row);
-  chat.scrollTop = chat.scrollHeight;
-  return row;
-}
-
-function renderConversations() {
-  convoList.innerHTML = '';
-  state.conversations.forEach(c => {
-    const a = document.createElement('button');
-    a.className = 'w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between ' + (state.current === c.id ? 'bg-slate-100 dark:bg-slate-800' : '');
-    const left = document.createElement('div');
-    left.innerHTML = `<div class=\"text-sm\">${c.title || 'Untitled'}</div><div class=\"text-xs text-slate-500\">${fmtTime(c.updated_at)}</div>`;
-    a.appendChild(left);
-    a.addEventListener('click', async () => {
-      await selectConversation(c.id);
-    });
-    convoList.appendChild(a);
-  });
-}
-
-async function loadConversations() {
-  const res = await fetch('/api/conversations');
-  const data = await res.json();
-  state.conversations = data.conversations || [];
-  state.current = data.current || (state.conversations[0]?.id || null);
-  state.is_admin = !!data.is_admin;
-  renderConversations();
-  adminBadge.classList.toggle('hidden', !state.is_admin);
-  loginBtn.classList.toggle('hidden', state.is_admin);
-  logoutBtn.classList.toggle('hidden', !state.is_admin);
-}
-
-async function selectConversation(id) {
-  await fetch('/api/select_conversation', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
-  state.current = id;
-  await Promise.all([loadConversations(), loadHistory()]);
-}
-
-async function createConversation(title) {
-  const res = await fetch('/api/conversations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
-  const data = await res.json();
-  state.current = data.id;
-  await Promise.all([loadConversations(), loadHistory()]);
-}
-
-async function renameConversation() {
-  if (!state.current) return;
-  const title = prompt('Enter new title:');
-  if (!title) return;
-  await fetch(`/api/conversations/${state.current}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
-  await loadConversations();
-}
-
-async function deleteConversation() {
-  if (!state.current) return;
-  if (!confirm('Delete this conversation?')) return;
-  await fetch(`/api/conversations/${state.current}`, { method: 'DELETE' });
-  await loadConversations();
-  await loadHistory();
-}
-
-async function loadHistory() {
-  const res = await fetch('/api/history');
-  const data = await res.json();
-  chat.innerHTML = '';
-  (data.history || []).forEach(m => renderMessage(m.role, m.content));
-  if (data.left !== undefined) {
-    if (data.left < 0) {
-      limitP.textContent = 'Unlimited access active';
-    } else {
-      limitP.textContent = `Free messages left today: ${data.left}`;
-    }
+  // Utilities
+  function showToast(message, variant = 'default', timeout = 3000) {
+    const host = document.getElementById('toasts');
+    const node = document.createElement('div');
+    const colors = variant === 'success' ? 'from-emerald-600 to-green-600' : variant === 'error' ? 'from-rose-600 to-pink-600' : 'from-slate-700 to-slate-900';
+    node.className = `animate-fadeInUp text-sm text-white px-4 py-2 rounded-xl shadow-elevated bg-gradient-to-r ${colors}`;
+    node.textContent = message;
+    host.appendChild(node);
+    setTimeout(() => { node.style.opacity = '0'; node.style.transform = 'translateY(6px)'; setTimeout(() => node.remove(), 200); }, timeout);
   }
-}
 
-async function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  renderMessage('user', text);
-  sendBtn.disabled = true;
-  const thinkingNode = renderThinking();
-  try {
-    const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
-    const data = await res.json();
-    thinkingNode.remove();
-    if (data.error) {
-      renderMessage('assistant', `Error: ${data.error}`);
+  function autoResizeTextarea(el) {
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight) + 'px';
+  }
+
+  function fmtTime(ts) { try { return new Date(ts).toLocaleString(); } catch { return ''; } }
+
+  // Markdown rendering with sanitization and code highlighting
+  marked.setOptions({ breaks: true, gfm: true });
+  function renderMarkdownToHtml(md) {
+    const dirty = marked.parse(md || '');
+    const clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = clean;
+    Prism.highlightAllUnder(wrapper);
+    // Add copy buttons to code blocks
+    wrapper.querySelectorAll('pre').forEach(pre => {
+      const btn = document.createElement('button');
+      btn.textContent = 'Copy';
+      btn.className = 'absolute top-2 right-2 text-[11px] px-2 py-1 rounded bg-black/50 hover:bg-black/70 text-white';
+      btn.addEventListener('click', () => {
+        const code = pre.querySelector('code')?.innerText || '';
+        navigator.clipboard.writeText(code).then(() => showToast('Code copied', 'success'));
+      });
+      pre.classList.add('relative');
+      pre.appendChild(btn);
+    });
+    return wrapper.innerHTML;
+  }
+
+  // Message rendering
+  function avatarFor(role) {
+    if (role === 'user') {
+      return '<div class=\"h-8 w-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-600\"></div>';
+    }
+    return '<div class=\"h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 shadow-elevated\"></div>';
+  }
+
+  function renderMessage(role, content) {
+    const row = document.createElement('div');
+    row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
+
+    const bubble = document.createElement('div');
+    const isUser = role === 'user';
+    bubble.className = 'msg rounded-2xl px-4 py-3 shadow ' + (isUser ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white' : 'bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70');
+    bubble.innerHTML = isUser ? `<div>${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-slate dark:prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+
+    if (isUser) {
+      row.appendChild(bubble);
+      row.appendChild(createElementFromHTML(avatarFor(role)));
     } else {
-      renderMessage('assistant', data.reply || '(No response)');
-      if (data.left !== undefined) {
-        if (data.left < 0) { limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; }
+      row.appendChild(createElementFromHTML(avatarFor(role)));
+      row.appendChild(bubble);
+    }
+
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function createElementFromHTML(htmlString) {
+    const div = document.createElement('div');
+    div.innerHTML = htmlString.trim();
+    return div.firstChild;
+  }
+
+  function renderThinking() {
+    const row = document.createElement('div');
+    row.className = 'w-full flex items-start gap-3 justify-start';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg rounded-2xl px-4 py-3 shadow italic text-slate-500 bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70';
+    bubble.innerHTML = '<div class=\"h-4 w-40 rounded bg-gradient-to-r from-slate-200/60 to-slate-300/60 dark:from-slate-700/60 dark:to-slate-600/60 bg-[length:200%_100%] animate-shimmer\"></div>';
+    row.appendChild(createElementFromHTML(avatarFor('assistant')));
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
+
+  function renderConversations() {
+    convoList.innerHTML = '';
+    const q = (convSearch?.value || '').toLowerCase();
+    state.conversations
+      .filter(c => !q || (c.title||'').toLowerCase().includes(q))
+      .forEach(c => {
+        const a = document.createElement('button');
+        a.className = 'w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 flex items-center justify-between border border-transparent ' + (state.current === c.id ? 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70' : '');
+        const left = document.createElement('div');
+        left.innerHTML = `<div class=\"text-sm font-medium truncate\">${(c.title || 'Untitled')}</div><div class=\"text-[11px] text-slate-500\">${fmtTime(c.updated_at)}</div>`;
+        a.appendChild(left);
+        a.addEventListener('click', async () => { await selectConversation(c.id); });
+        convoList.appendChild(a);
+    });
+  }
+
+  async function loadConversations() {
+    const res = await fetch('/api/conversations');
+    const data = await res.json();
+    state.conversations = data.conversations || [];
+    state.current = data.current || (state.conversations[0]?.id || null);
+    state.is_admin = !!data.is_admin;
+    renderConversations();
+    adminBadge.classList.toggle('hidden', !state.is_admin);
+    loginBtn.classList.toggle('hidden', state.is_admin);
+    logoutBtn.classList.toggle('hidden', !state.is_admin);
+  }
+
+  async function selectConversation(id) {
+    await fetch('/api/select_conversation', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+    state.current = id;
+    await Promise.all([loadConversations(), loadHistory()]);
+  }
+
+  async function createConversation(title) {
+    const res = await fetch('/api/conversations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
+    const data = await res.json();
+    state.current = data.id;
+    await Promise.all([loadConversations(), loadHistory()]);
+  }
+
+  // Modal prompts
+  function showPrompt({title = 'Input', description = '', placeholder = '', confirmText = 'Confirm', type = 'text', confirmVariant = 'default'} = {}) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
+      overlay.innerHTML = `
+        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
+          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
+            <div class=\"text-lg font-semibold\">${title}</div>
+            <div class=\"text-sm text-slate-500\">${description}</div>
+          </div>
+          <div class=\"p-4 space-y-3\">
+            <input id=\"_prompt_input\" type=\"${type}\" placeholder=\"${placeholder}\" class=\"w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500\" />
+            <div class=\"flex justify-end gap-2\">
+              <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
+              <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white ${confirmVariant==='danger' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500'}\">${confirmText}</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const inputEl = overlay.querySelector('#_prompt_input');
+      setTimeout(() => inputEl?.focus(), 50);
+      overlay.querySelector('#_cancel').addEventListener('click', () => { overlay.remove(); resolve(null); });
+      overlay.querySelector('#_ok').addEventListener('click', () => { const val = inputEl.value.trim(); overlay.remove(); resolve(val || null); });
+      overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') { overlay.remove(); resolve(null); } });
+    });
+  }
+
+  function showConfirm({title='Confirm', description='Are you sure?', confirmText='Confirm'} = {}) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
+      overlay.innerHTML = `
+        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
+          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
+            <div class=\"text-lg font-semibold\">${title}</div>
+            <div class=\"text-sm text-slate-500\">${description}</div>
+          </div>
+          <div class=\"p-4 flex justify-end gap-2\">
+            <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
+            <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white bg-rose-600 hover:bg-rose-500\">${confirmText}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#_cancel').addEventListener('click', () => { overlay.remove(); resolve(false); });
+      overlay.querySelector('#_ok').addEventListener('click', () => { overlay.remove(); resolve(true); });
+      overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') { overlay.remove(); resolve(false); } });
+    });
+  }
+
+  // History / chat
+  async function loadHistory() {
+    const res = await fetch('/api/history');
+    const data = await res.json();
+    chat.innerHTML = '';
+    (data.history || []).forEach(m => renderMessage(m.role, m.content));
+    if (data.left !== undefined) {
+      if (data.left < 0) {
+        limitP.textContent = 'Unlimited access active';
+      } else {
+        limitP.textContent = `Free messages left today: ${data.left}`;
       }
     }
-  } catch(e) {
-    thinkingNode.remove();
-    renderMessage('assistant', 'Network error.');
-  } finally {
-    sendBtn.disabled = false;
   }
-}
 
-sendBtn.addEventListener('click', sendMessage);
-input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
-[newChatBtn, newChatBtnTop].forEach(btn => btn && btn.addEventListener('click', async () => { await fetch('/api/newchat', {method: 'POST'}); await Promise.all([loadConversations(), loadHistory()]); }));
-[keyBtn, keyBtnTop].forEach(btn => btn && btn.addEventListener('click', async () => {
-  const key = prompt('Enter your key:');
-  if (!key) return;
-  const res = await fetch('/api/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
-  const data = await res.json();
-  if (data.ok) { alert('Key activated!'); await loadHistory(); } else { alert(data.error || 'Invalid key'); }
-}));
-renameBtn.addEventListener('click', renameConversation);
-deleteBtn.addEventListener('click', deleteConversation);
-loginBtn.addEventListener('click', async () => {
-  const u = prompt('Admin username:');
-  const p = prompt('Admin password:');
-  if (!u || !p) return;
-  const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u, password:p}) });
-  const data = await res.json();
-  if (data.ok) { await loadConversations(); await loadHistory(); } else { alert(data.error || 'Login failed'); }
-});
-logoutBtn.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await loadConversations(); await loadHistory(); });
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    autoResizeTextarea(input);
+    renderMessage('user', text);
+    sendBtn.disabled = true;
+    const thinkingNode = renderThinking();
+    try {
+      const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
+      const data = await res.json();
+      thinkingNode.remove();
+      if (data.error) {
+        renderMessage('assistant', `Error: ${data.error}`);
+        showToast(data.error, 'error');
+      } else {
+        renderMessage('assistant', data.reply || '(No response)');
+        if (data.left !== undefined) {
+          if (data.left < 0) { limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; }
+        }
+      }
+    } catch(e) {
+      thinkingNode.remove();
+      renderMessage('assistant', 'Network error.');
+      showToast('Network error', 'error');
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
 
-document.getElementById('mobileMenu').addEventListener('click', () => { document.querySelector('aside').classList.toggle('hidden'); });
+  // Actions
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
+  input.addEventListener('input', () => autoResizeTextarea(input));
 
-themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
-if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
+  const newChatHandlers = [newChatBtn, newChatBtnTop, fabNewChat].filter(Boolean);
+  newChatHandlers.forEach(btn => btn.addEventListener('click', async () => { await fetch('/api/newchat', {method: 'POST'}); await Promise.all([loadConversations(), loadHistory()]); showToast('New chat created','success'); }));
 
-Promise.all([loadConversations(), loadHistory()]);
-</script>
+  const keyHandlers = [keyBtn, keyBtnTop].filter(Boolean);
+  keyHandlers.forEach(btn => btn.addEventListener('click', async () => {
+    const key = await showPrompt({ title: 'Activate key', description: 'Enter your access key to unlock unlimited usage.', placeholder: 'Your key', confirmText: 'Activate' });
+    if (!key) return;
+    const res = await fetch('/api/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
+    const data = await res.json();
+    if (data.ok) { showToast('Key activated!','success'); await loadHistory(); } else { showToast(data.error || 'Invalid key','error'); }
+  }));
+
+  if (renameBtn) renameBtn.addEventListener('click', async () => {
+    if (!state.current) return;
+    const title = await showPrompt({ title: 'Rename conversation', placeholder: 'New title', confirmText: 'Rename' });
+    if (!title) return;
+    await fetch(`/api/conversations/${state.current}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
+    await loadConversations();
+  });
+
+  if (deleteBtn) deleteBtn.addEventListener('click', async () => {
+    if (!state.current) return;
+    const ok = await showConfirm({ title: 'Delete conversation', description: 'This action cannot be undone.', confirmText: 'Delete' });
+    if (!ok) return;
+    await fetch(`/api/conversations/${state.current}`, { method: 'DELETE' });
+    await loadConversations();
+    await loadHistory();
+    showToast('Conversation deleted','success');
+  });
+
+  loginBtn.addEventListener('click', async () => {
+    const u = await showPrompt({ title: 'Admin login', placeholder: 'Username', confirmText: 'Next' });
+    if (!u) return;
+    const p = await showPrompt({ title: 'Admin login', placeholder: 'Password', confirmText: 'Login', type: 'password' });
+    if (!p) return;
+    const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u, password:p}) });
+    const data = await res.json();
+    if (data.ok) { await loadConversations(); await loadHistory(); showToast('Logged in as admin','success'); } else { showToast(data.error || 'Login failed','error'); }
+  });
+
+  logoutBtn.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await loadConversations(); await loadHistory(); showToast('Logged out','success'); });
+
+  mobileMenuBtn.addEventListener('click', () => { document.querySelector('aside').classList.toggle('hidden'); });
+  themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
+  if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
+  if (convSearch) convSearch.addEventListener('input', renderConversations);
+
+  Promise.all([loadConversations(), loadHistory()]);
+  </script>
 </body>
 </html>
 """
