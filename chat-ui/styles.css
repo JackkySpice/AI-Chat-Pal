@@ -426,3 +426,64 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: non
 
 /* Wallpaper lighten tweak for nova */
 body.wallpaper-light .chat { backdrop-filter: blur(2px); }
+
+/* Particles canvas */
+.fx.fx-particles { z-index: 0; }
+
+/* Brand capsule in topbar */
+.brand-capsule { display: inline-flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 999px; background: color-mix(in oklab, var(--panel), transparent 40%); border: 1px solid color-mix(in oklab, var(--border), transparent 40%); box-shadow: 0 8px 22px rgba(2,6,23,0.15); }
+.brand-name { font-weight: 700; letter-spacing: .2px; }
+.brand-pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: rgba(99,102,241,0.12); color: var(--text-subtle); border: 1px solid rgba(99,102,241,0.25); }
+.brand-dot { width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); animation: pulse 2s infinite; display: inline-block; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5);} 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0);} }
+
+/* Latency text */
+.topbar .latency { font-size: 12px; color: var(--text-subtle); padding-right: 6px; }
+
+/* Slash command menu */
+.slash-menu { position: absolute; margin-top: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--elev-shadow); padding: 6px; min-width: 280px; max-width: 90vw; z-index: 50; }
+.slash-menu[hidden] { display: none; }
+.slash-menu .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+.slash-menu .item[aria-selected="true"], .slash-menu .item:hover { background: var(--panel-2); }
+.slash-menu .hint { color: var(--text-subtle); font-size: 12px; }
+
+/* Composer status */
+.composer-status { font-size: 12px; color: var(--text-subtle); display: flex; align-items: center; gap: 8px; }
+
+/* Mosaic for attachments */
+.attachments { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.attachment { align-self: start; }
+
+/* Message appear springy animation */
+@keyframes springIn { 0% { transform: translateY(8px) scale(0.98); opacity: 0; } 60% { transform: translateY(-2px) scale(1.005); opacity: 1; } 100% { transform: translateY(0) scale(1); } }
+.message.appear { animation: springIn .34s cubic-bezier(.2,.7,.3,1) both; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .message.appear, .fx.fx-aurora::before, .fx.fx-aurora::after, .brand-dot { animation: none !important; }
+}
+
+/* Screen reader only */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* New theme presets */
+body.solar {
+  --bg: #fff8f1;
+  --panel: #ffffff;
+  --panel-2: #fff3e6;
+  --text: #1f2937;
+  --text-subtle: #6b7280;
+  --border: #fde7d5;
+  --primary-start: #f59e0b; /* amber */
+  --primary-end: #ef4444;   /* red */
+}
+body.neon {
+  --bg: #070b1a;
+  --panel: #0b1020;
+  --panel-2: #060a18;
+  --text: #e6f0ff;
+  --text-subtle: #9fb1d1;
+  --border: #162038;
+  --primary-start: #22d3ee; /* cyan */
+  --primary-end: #8b5cf6;   /* violet */
+}
