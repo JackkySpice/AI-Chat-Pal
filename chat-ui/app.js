@@ -22,16 +22,76 @@ const searchEl = document.getElementById('topbar-search');
 const exportJsonBtn = document.getElementById('export-json-btn');
 const exportMdBtn = document.getElementById('export-md-btn');
 const fileInputEl = document.getElementById('file-input');
+const latencyEl = document.getElementById('latency');
+const modelPillEl = document.getElementById('model-pill');
+const modelStatusDotEl = document.getElementById('model-status-dot');
+const composerStatusEl = document.getElementById('composer-status');
+const slashMenuEl = document.getElementById('slash-menu');
+const liveRegionEl = document.getElementById('live-region');
+const modelSelectEl = document.getElementById('model-select');
 
 let chats = [
   { id: 'c1', title: 'Welcome', messages: [] }
 ];
 let activeChatId = 'c1';
 
+// Particles background (lightweight)
+(function initParticles() {
+  const canvas = document.getElementById('fx-particles');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let width = 0, height = 0;
+  let particles = [];
+  const NUM = 60;
+  function resize() {
+    width = canvas.clientWidth = window.innerWidth;
+    height = canvas.clientHeight = window.innerHeight;
+    canvas.width = Math.floor(width * DPR);
+    canvas.height = Math.floor(height * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  function reset() {
+    particles = new Array(NUM).fill(0).map(() => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: 1 + Math.random() * 2,
+      vx: -0.3 + Math.random() * 0.6,
+      vy: -0.3 + Math.random() * 0.6,
+      a: 0.25 + Math.random() * 0.35,
+    }));
+  }
+  let rafId = 0; let running = true;
+  function draw() {
+    if (!running) return;
+    ctx.clearRect(0,0,width,height);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -10) p.x = width+10; if (p.x > width+10) p.x = -10;
+      if (p.y < -10) p.y = height+10; if (p.y > height+10) p.y = -10;
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 40);
+      grad.addColorStop(0, `rgba(99,102,241,${p.a})`);
+      grad.addColorStop(1, 'rgba(99,102,241,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 40, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    rafId = requestAnimationFrame(draw);
+  }
+  const vis = () => { running = !document.hidden; if (running) draw(); };
+  window.addEventListener('resize', () => { resize(); reset(); });
+  document.addEventListener('visibilitychange', vis);
+  resize(); reset(); draw();
+})();
+
+// Extend theme handling
 function setTheme(theme) {
-  document.body.classList.remove('dark', 'amoled');
+  document.body.classList.remove('dark', 'amoled', 'solar', 'neon');
   if (theme === 'dark') document.body.classList.add('dark');
   if (theme === 'amoled') document.body.classList.add('amoled');
+  if (theme === 'solar') document.body.classList.add('solar');
+  if (theme === 'neon') document.body.classList.add('neon');
   localStorage.setItem('theme', theme);
 }
 
@@ -587,7 +647,11 @@ if (settingsEl) settingsEl.addEventListener('click', (e) => { if (e.target === s
   if (themeLightEl) themeLightEl.checked = savedTheme === 'light';
   if (themeDarkEl) themeDarkEl.checked = savedTheme === 'dark';
   if (themeAmoledEl) themeAmoledEl.checked = savedTheme === 'amoled';
-  const radios = [themeLightEl, themeDarkEl, themeAmoledEl].filter(Boolean);
+  const themeSolarEl = document.getElementById('theme-solar');
+  const themeNeonEl = document.getElementById('theme-neon');
+  if (themeSolarEl) themeSolarEl.checked = savedTheme === 'solar';
+  if (themeNeonEl) themeNeonEl.checked = savedTheme === 'neon';
+  const radios = [themeLightEl, themeDarkEl, themeAmoledEl, themeSolarEl, themeNeonEl].filter(Boolean);
   radios.forEach((el) => el.addEventListener('change', () => {
     const theme = el.value;
     setTheme(theme);
@@ -639,3 +703,210 @@ function exportAsMarkdown() {
 }
 if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportAsJson);
 if (exportMdBtn) exportMdBtn.addEventListener('click', exportAsMarkdown);
+
+// Dynamic suggestions based on last assistant message
+function updateSuggestionsBasedOnContext() {
+  if (!suggestionsEl) return;
+  const chat = getActiveChat();
+  const lastAssistant = [...chat.messages].reverse().find(m => m.role === 'assistant' && (m.content||'').trim());
+  const base = [
+    { text: 'Summarize', cmd: 'Summarize this' },
+    { text: 'Polish', cmd: 'Polish the writing' },
+    { text: 'Explain', cmd: 'Explain step by step' },
+    { text: 'Translate', cmd: 'Translate to Spanish' },
+  ];
+  let ideas = base;
+  if (lastAssistant) {
+    const c = lastAssistant.content.toLowerCase();
+    ideas = [];
+    if (c.includes('code') || c.includes('function') || c.includes('error')) ideas.push({ text: 'Fix', cmd: 'Find and fix the bug' });
+    if (c.includes('steps') || c.includes('plan') || c.includes('list')) ideas.push({ text: 'Condense', cmd: 'Condense to 3 bullets' });
+    if (c.length > 400) ideas.push({ text: 'TL;DR', cmd: 'Give a TL;DR summary' });
+    ideas.push({ text: 'Next', cmd: 'What should I do next?' });
+    while (ideas.length < 4) ideas.push(base[ideas.length] || base[0]);
+  }
+  suggestionsEl.innerHTML = '';
+  ideas.slice(0,4).forEach((i) => {
+    const b = document.createElement('button');
+    b.className = 'btn ghost chip';
+    b.setAttribute('data-suggest', i.cmd);
+    b.textContent = i.text;
+    suggestionsEl.appendChild(b);
+  });
+}
+
+// Composer status: chars and approx tokens
+function estimateTokens(text) {
+  // simple heuristic ~4 chars per token
+  return Math.max(1, Math.round((text || '').length / 4));
+}
+function updateComposerStatus() {
+  if (!composerStatusEl) return;
+  const text = inputEl.value || '';
+  const chars = text.length;
+  const tokens = estimateTokens(text);
+  const files = pendingAttachments.length ? ` · ${pendingAttachments.length} file${pendingAttachments.length>1?'s':''}` : '';
+  composerStatusEl.textContent = `${chars} chars · ~${tokens} tokens${files}`;
+}
+
+// Slash command menu
+const slashCommands = [
+  { label: 'Summarize selection', insert: 'Summarize this' },
+  { label: 'Translate to Spanish', insert: 'Translate to Spanish' },
+  { label: 'Change tone to formal', insert: 'Rewrite in a formal tone' },
+  { label: 'Generate test cases', insert: 'Generate unit tests' },
+  { label: 'Explain step by step', insert: 'Explain step by step' },
+  { label: 'Make bullet list', insert: 'Convert into concise bullet points' },
+];
+function openSlashMenu() {
+  if (!slashMenuEl) return;
+  const rect = inputEl.getBoundingClientRect();
+  slashMenuEl.style.left = `${rect.left + 8}px`;
+  slashMenuEl.style.top = `${rect.bottom + 6 + window.scrollY}px`;
+  slashMenuEl.innerHTML = '';
+  slashCommands.forEach((cmd, idx) => {
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.setAttribute('role', 'option');
+    if (idx === 0) item.setAttribute('aria-selected', 'true');
+    item.innerHTML = `<span>${cmd.label}</span><span class="hint">${cmd.insert}</span>`;
+    item.addEventListener('click', () => applySlashCommand(cmd));
+    slashMenuEl.appendChild(item);
+  });
+  slashMenuEl.hidden = false;
+  inputEl.setAttribute('aria-expanded', 'true');
+}
+function closeSlashMenu() {
+  if (!slashMenuEl) return;
+  slashMenuEl.hidden = true;
+  inputEl.setAttribute('aria-expanded', 'false');
+}
+function applySlashCommand(cmd) {
+  const cur = inputEl.value.trim();
+  inputEl.value = cur ? `${cur}\n${cmd.insert}` : cmd.insert;
+  closeSlashMenu();
+  inputEl.focus();
+  resizeTextareaToContent();
+  updateComposerStatus();
+}
+function handleSlashKeys(e) {
+  if (!slashMenuEl || slashMenuEl.hidden) return;
+  const items = Array.from(slashMenuEl.querySelectorAll('.item'));
+  let idx = items.findIndex(i => i.getAttribute('aria-selected') === 'true');
+  if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(items.length-1, idx+1); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(0, idx-1); }
+  if (e.key === 'Enter') { e.preventDefault(); const selected = items[idx] || items[0]; selected && selected.click(); return; }
+  items.forEach((it, i) => it.setAttribute('aria-selected', i === idx ? 'true' : 'false'));
+}
+
+// Enhance message actions: regenerate & summarize
+function regenerateAssistantMessage(msgEl) {
+  const chat = getActiveChat();
+  const domMessages = Array.from(chatEl.querySelectorAll('.message'));
+  const realIndex = domMessages.indexOf(msgEl);
+  const msg = chat.messages[realIndex];
+  if (!msg || msg.role !== 'assistant') return;
+  const userPrev = chat.messages[realIndex - 1];
+  const userText = userPrev && userPrev.role === 'user' ? userPrev.content : 'Regenerate the last answer';
+  simulateAssistantResponse(userText + ' (regenerated)');
+}
+function summarizeAssistantMessage(msgEl) {
+  const text = msgEl.innerText || '';
+  const sentences = text.split(/(?<=[.!?])\s+/).slice(0,3);
+  const summary = `Summary:\n- ${sentences.join('\n- ')}`;
+  addMessage('assistant', summary, { thoughts: { plan: ['Summarized content'], activity: ['Generated summary'] } });
+}
+
+// Override attachMessageActions to add more buttons while preserving copy/delete
+const originalAttach = attachMessageActions;
+attachMessageActions = function(container) {
+  originalAttach(container);
+  container.querySelectorAll('.message').forEach((msgEl) => {
+    const actions = msgEl.querySelector('.msg-actions');
+    if (!actions) return;
+    if (!actions.querySelector('.btn.regen')) {
+      const regen = document.createElement('button');
+      regen.className = 'btn ghost icon regen';
+      regen.title = 'Regenerate';
+      regen.textContent = '🔁';
+      regen.addEventListener('click', () => regenerateAssistantMessage(msgEl));
+      actions.appendChild(regen);
+    }
+    if (!actions.querySelector('.btn.summarize')) {
+      const sum = document.createElement('button');
+      sum.className = 'btn ghost icon summarize';
+      sum.title = 'Summarize';
+      sum.textContent = '🧠';
+      sum.addEventListener('click', () => summarizeAssistantMessage(msgEl));
+      actions.appendChild(sum);
+    }
+  });
+};
+
+// Update Suggestions after rendering
+const originalRender = renderMessages;
+renderMessages = function() {
+  originalRender();
+  updateSuggestionsBasedOnContext();
+};
+
+// Update latency on simulateAssistantResponse end
+const originalSim = simulateAssistantResponse;
+simulateAssistantResponse = function(userText) {
+  const start = performance.now();
+  const beforeCount = getActiveChat().messages.length;
+  originalSim(userText);
+  const check = setInterval(() => {
+    const chat = getActiveChat();
+    const last = chat.messages[chat.messages.length - 1];
+    const done = last && !last.streaming && chat.messages.length > beforeCount;
+    if (done) {
+      clearInterval(check);
+      const ms = Math.round(performance.now() - start);
+      if (latencyEl) latencyEl.textContent = `${ms} ms`;
+      if (modelStatusDotEl) {
+        modelStatusDotEl.style.background = '#22c55e';
+      }
+    }
+  }, 60);
+  if (modelStatusDotEl) modelStatusDotEl.style.background = '#f59e0b';
+};
+
+// Announce new messages for screen readers
+const originalAddMessage = addMessage;
+addMessage = function(role, content, meta = {}) {
+  const msg = originalAddMessage(role, content, meta);
+  try {
+    if (liveRegionEl) liveRegionEl.textContent = `${role === 'user' ? 'You' : 'Assistant'}: ${content?.slice(0, 140)}`;
+  } catch {}
+  return msg;
+};
+
+// Wire up composer enhancements
+if (inputEl) {
+  inputEl.addEventListener('input', () => {
+    resizeTextareaToContent();
+    updateComposerStatus();
+    const val = inputEl.value || '';
+    if (val.trim().startsWith('/')) openSlashMenu(); else closeSlashMenu();
+  });
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      setTimeout(() => openSlashMenu(), 0);
+    }
+    if (!slashMenuEl.hidden) handleSlashKeys(e);
+  });
+}
+
+// Update status when attachments change
+const originalRenderAttachments = renderPendingAttachments;
+renderPendingAttachments = function() {
+  originalRenderAttachments();
+  updateComposerStatus();
+};
+
+// Initialize statuses on boot completion
+(function initNovaEnhancements() {
+  updateComposerStatus();
+  updateSuggestionsBasedOnContext();
+})();

@@ -3,20 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-    <title>Chat UI – Thoughts + Output</title>
+    <title>Nova — AI Chat</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
   </head>
   <body>
+    <div class="fx fx-aurora" aria-hidden="true"></div>
+    <div class="fx fx-grid" aria-hidden="true"></div>
+    <canvas id="fx-particles" class="fx fx-particles" aria-hidden="true"></canvas>
     <div class="app">
              <aside class="sidebar" id="sidebar" aria-label="Conversations sidebar">
          <div class="sidebar-header">
           <div class="brand">
             <div class="brand-mark">AI</div>
-            <div class="brand-text">Assistant</div>
+            <div class="brand-text">Nova</div>
           </div>
           <button class="btn primary w-100" id="new-chat-btn" aria-label="Start new chat">+ New chat</button>
         </div>
@@ -28,8 +32,15 @@
       <main class="main">
         <header class="topbar">
           <button class="btn icon" id="toggle-sidebar-btn" aria-label="Toggle sidebar" aria-controls="sidebar">☰</button>
-          <div class="title">Chat</div>
+          <div class="title">
+            <div class="brand-capsule" role="img" aria-label="Nova AI">
+              <span class="brand-dot" id="model-status-dot"></span>
+              <span class="brand-name">Nova</span>
+              <span class="brand-pill" id="model-pill">GPT-5 Turbo · 32k</span>
+            </div>
+          </div>
           <div class="topbar-actions">
+            <div class="latency" title="Last response latency"><span id="latency">—</span></div>
             <label class="switch" title="Show reasoning summary (not private chain-of-thought)">
               <input type="checkbox" id="toggle-thoughts" checked />
               <span>Show Thoughts</span>
@@ -57,7 +68,7 @@
             <button class="btn ghost chip" data-suggest="Translate to Spanish">Translate</button>
           </div>
           <div class="composer-inner">
-            <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true"></textarea>
+            <textarea id="composer-input" rows="1" placeholder="Send a message" spellcheck="true" aria-haspopup="listbox" aria-expanded="false" aria-controls="slash-menu"></textarea>
             <div class="composer-actions">
               <input type="file" id="file-input" multiple hidden />
               <button class="btn ghost icon" id="attachment-btn" title="Attach" aria-label="Attach">📎</button>
@@ -67,6 +78,8 @@
               </button>
             </div>
           </div>
+          <div class="composer-status" id="composer-status" aria-live="polite"></div>
+          <div class="slash-menu" id="slash-menu" role="listbox" aria-label="Command menu" hidden></div>
           <div class="disclaimer">
             Thoughts show a concise reasoning summary and activity log. Private chain-of-thought is not displayed.
           </div>
@@ -94,6 +107,17 @@
         <label><input type="radio" name="theme" id="theme-light" value="light"> Light</label>
         <label><input type="radio" name="theme" id="theme-dark" value="dark"> Dark</label>
         <label><input type="radio" name="theme" id="theme-amoled" value="amoled"> AMOLED</label>
+        <label><input type="radio" name="theme" id="theme-solar" value="solar"> Solar</label>
+        <label><input type="radio" name="theme" id="theme-neon" value="neon"> Midnight Neon</label>
+      </div>
+      <div class="group">
+        <div class="label">Model</div>
+        <label for="model-select" class="sr-only">Model</label>
+        <select id="model-select" class="select">
+          <option>GPT-5 Turbo · 32k</option>
+          <option>GPT-4.1 Mini · 128k</option>
+          <option>Claude 3.7 Sonnet</option>
+        </select>
       </div>
       <label class="switch" title="Use decorative wallpaper in chat area">
         <input type="checkbox" id="toggle-wallpaper" />
@@ -113,5 +137,7 @@
     </div>
       </div>
     </div>
+
+    <div id="live-region" class="sr-only" aria-live="polite"></div>
   </body>
 </html>
