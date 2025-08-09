@@ -301,3 +301,128 @@ body.compact .btn { height: 34px; }
 .attachments { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .attachment { border: 1px dashed var(--border); background: var(--panel-2); border-radius: 10px; padding: 8px; display: inline-flex; gap: 8px; align-items: center; }
 .attachment img { max-width: 120px; height: auto; border-radius: 8px; display: block; }
+
+/* Nova Gorgeous Theme Enhancements */
+:root {
+  --surface-alpha: 0.55;
+  --blur: 16px;
+  --ring: 0 0 0 3px rgba(37,99,235,0.25);
+  --gradient-1: linear-gradient(135deg, #60a5fa 0%, #a78bfa 40%, #34d399 100%);
+  --gradient-2: linear-gradient(135deg, #22d3ee 0%, #818cf8 50%, #f472b6 100%);
+  --neo-shadow: 0 10px 30px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Background FX layers */
+.fx { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.fx.fx-grid {
+  background:
+    radial-gradient(1200px 800px at 10% -10%, rgba(99,102,241,0.12), transparent 60%),
+    radial-gradient(1000px 700px at 110% 10%, rgba(16,185,129,0.12), transparent 60%),
+    linear-gradient(180deg, rgba(2,6,23,0.85), rgba(2,6,23,0.6)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 32px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 32px);
+  mix-blend-mode: normal;
+  opacity: .55;
+}
+.fx.fx-aurora::before,
+.fx.fx-aurora::after {
+  content: ""; position: absolute; inset: -20%; filter: blur(70px);
+  background: radial-gradient(600px 400px at 20% 20%, rgba(99,102,241,0.25), transparent 60%),
+              radial-gradient(600px 400px at 80% 30%, rgba(236,72,153,0.25), transparent 60%),
+              radial-gradient(600px 400px at 60% 80%, rgba(34,197,94,0.25), transparent 60%);
+  animation: aurora 18s ease-in-out infinite alternate;
+  opacity: 0.6;
+}
+.fx.fx-aurora::after { animation-duration: 22s; animation-direction: alternate-reverse; }
+@keyframes aurora { 0% { transform: translate3d(-2%, -2%, 0) scale(1.02); } 100% { transform: translate3d(2%, 1%, 0) scale(1.05); } }
+
+/* Elevate app above FX */
+.app { position: relative; z-index: 1; }
+
+/* Typography enhancements */
+body { font-feature-settings: "liga" 1, "kern" 1; }
+.title, .brand-text, .settings-header, .meta { font-family: Sora, Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+.brand-mark { font-family: Sora, Inter, ui-sans-serif, system-ui; }
+
+/* Glassmorphism surfaces */
+.sidebar, .topbar, .composer {
+  background: color-mix(in oklab, var(--panel), transparent calc((1 - var(--surface-alpha)) * 100%));
+  backdrop-filter: saturate(1.4) blur(var(--blur));
+  -webkit-backdrop-filter: saturate(1.4) blur(var(--blur));
+  border-color: color-mix(in oklab, var(--border), transparent 40%);
+  box-shadow: 0 20px 40px rgba(2,6,23,0.12);
+}
+body.dark .sidebar, body.dark .topbar, body.dark .composer { box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
+
+/* Sidebar refinements */
+.sidebar { border-right-color: color-mix(in oklab, var(--border), transparent 35%); }
+.sidebar-item { transition: background .2s ease, transform .05s ease, border-color .2s ease; }
+.sidebar-item:hover { transform: translateY(-1px); background: color-mix(in oklab, var(--panel-2), transparent 30%); }
+.sidebar-item.active { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.25); }
+.brand { padding: 4px 0; }
+.brand-mark { width: 32px; height: 32px; border-radius: 10px; background: var(--gradient-1); box-shadow: var(--neo-shadow); }
+.brand-text { font-weight: 700; letter-spacing: .2px; }
+
+/* Topbar */
+.topbar { background: color-mix(in oklab, var(--panel), transparent 40%); }
+.topbar .search input[type="search"] { background: color-mix(in oklab, var(--panel), transparent 25%); backdrop-filter: blur(8px); }
+
+/* Message bubbles with soft glass and gradient edge */
+.message {
+  background: color-mix(in oklab, var(--panel), transparent 30%);
+  border-color: color-mix(in oklab, var(--border), transparent 40%);
+  box-shadow: var(--neo-shadow);
+}
+.message.user {
+  background: linear-gradient(180deg, rgba(11,18,32,0.9), rgba(11,18,32,0.82));
+  border-color: rgba(11,18,32,0.6);
+}
+.message.assistant {
+  border-image: linear-gradient(180deg, rgba(99,102,241,0.35), rgba(16,185,129,0.2)) 1;
+}
+
+/* Thoughts card */
+.thoughts { background: color-mix(in oklab, var(--panel-2), transparent 20%); border-color: color-mix(in oklab, var(--border), transparent 35%); }
+.thoughts .tab.active { background: #0f172a; color: #fff; box-shadow: 0 8px 18px rgba(2,6,23,0.35); }
+
+/* Composer */
+.composer-inner { background: color-mix(in oklab, var(--panel), transparent 20%); backdrop-filter: blur(8px); }
+.composer textarea { caret-color: var(--primary-end); }
+
+/* Buttons with radiant gradients */
+.btn { border-color: color-mix(in oklab, var(--border), transparent 30%); box-shadow: 0 6px 16px rgba(2,6,23,0.12); }
+.btn:hover { filter: brightness(1.03); box-shadow: 0 12px 24px rgba(2,6,23,0.16); }
+.btn.primary {
+  background: var(--gradient-1);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, .3), 0 2px 0 rgba(255,255,255,0.15) inset;
+}
+.btn.primary:active { transform: translateY(1px) scale(0.99); }
+.btn.ghost { background: color-mix(in oklab, #ffffff, transparent 55%); }
+
+/* Chips */
+.chip { background: color-mix(in oklab, var(--panel), transparent 35%); border-color: color-mix(in oklab, var(--border), transparent 35%); }
+.chip:hover { background: color-mix(in oklab, var(--panel), transparent 25%); }
+
+/* Code blocks */
+.code {
+  background: linear-gradient(180deg, #0b1220, #0b1220) padding-box,
+              linear-gradient(135deg, rgba(99,102,241,0.45), rgba(34,197,94,0.35)) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 20px 40px rgba(2,6,23,0.35);
+}
+.code .copy-btn { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22); }
+
+/* Scroll to bottom */
+.scroll-to-bottom { background: var(--gradient-2); border-color: transparent; color: #fff; }
+
+/* Focus ring */
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* Scrollbar */
+* { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.6) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(148,163,184,.6), rgba(99,102,241,.7)); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Wallpaper lighten tweak for nova */
+body.wallpaper-light .chat { backdrop-filter: blur(2px); }
