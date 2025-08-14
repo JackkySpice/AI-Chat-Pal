@@ -1008,9 +1008,15 @@ def _create_flask_app() -> Flask:
         cid, resp2 = _ensure_current_conversation(user_id)
         final_resp: Optional[Response] = resp or resp2
         if final_resp is None:
-            return Response(HTML_INDEX, mimetype="text/html")
-        final_resp.set_data(HTML_INDEX)
-        final_resp.mimetype = "text/html"
+            final_resp = Response(HTML_INDEX, mimetype="text/html")
+        else:
+            final_resp.set_data(HTML_INDEX)
+            final_resp.mimetype = "text/html"
+        # Ensure both cookies are set if needed
+        if resp is not None:
+            final_resp.set_cookie("uid", str(user_id), max_age=60*60*24*365, httponly=True, samesite="Lax")
+        if resp2 is not None:
+            final_resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
         return final_resp
 
     @app.get("/api/history")
@@ -1024,9 +1030,16 @@ def _create_flask_app() -> Flask:
         }
         combined_resp = resp or resp2
         if combined_resp is None:
-            return jsonify(payload)
-        combined_resp.set_data(json.dumps(payload))
-        combined_resp.mimetype = "application/json"
+            combined_resp = make_response(json.dumps(payload))
+            combined_resp.mimetype = "application/json"
+        else:
+            combined_resp.set_data(json.dumps(payload))
+            combined_resp.mimetype = "application/json"
+        # Ensure both cookies are present
+        if resp is not None:
+            combined_resp.set_cookie("uid", str(user_id), max_age=60*60*24*365, httponly=True, samesite="Lax")
+        if resp2 is not None:
+            combined_resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
         return combined_resp
 
     @app.get("/api/conversations")
@@ -1043,9 +1056,16 @@ def _create_flask_app() -> Flask:
         payload = {"conversations": convos, "current": cid, "is_admin": request.cookies.get("admin") == "1"}
         combined_resp = resp or resp2
         if combined_resp is None:
-            return jsonify(payload)
-        combined_resp.set_data(json.dumps(payload))
-        combined_resp.mimetype = "application/json"
+            combined_resp = make_response(json.dumps(payload))
+            combined_resp.mimetype = "application/json"
+        else:
+            combined_resp.set_data(json.dumps(payload))
+            combined_resp.mimetype = "application/json"
+        # Ensure both cookies are present
+        if resp is not None:
+            combined_resp.set_cookie("uid", str(user_id), max_age=60*60*24*365, httponly=True, samesite="Lax")
+        if resp2 is not None:
+            combined_resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
         return combined_resp
 
     @app.post("/api/conversations")
@@ -1089,7 +1109,7 @@ def _create_flask_app() -> Flask:
         resp.set_cookie("cid", cid, max_age=60*60*24*365, httponly=True, samesite="Lax")
         return resp
 
-    @app.put("/api/conversations/<cid>")
+    @app.route("/api/conversations/<cid>", methods=["PUT", "PATCH", "POST"])
     def api_conversations_rename(cid: str):
         user_id, _ = _get_or_create_user_id()
         data = request.get_json(silent=True) or {}
@@ -1188,12 +1208,12 @@ def _create_flask_app() -> Flask:
         if not text and not data.get("attachments"):
             return jsonify({"error": "Empty message"}), 400
 
-        # Rate limit for free users
-        if not _is_admin_request() and not _has_active_key(user_id):
+        # Rate limit for free users (only increment on success)
+        free_user = (not _is_admin_request()) and (not _has_active_key(user_id))
+        if free_user:
             current = _get_message_count(user_id)
             if current >= FREE_DAILY_LIMIT:
                 return jsonify({"error": "Daily free limit reached (3/day). Use a key to unlock unlimited.", "left": 0}), 429
-            _increment_message_count(user_id)
 
         history = load_conversation_history(user_id, cid)
         now = datetime.now(timezone.utc)
@@ -1245,6 +1265,8 @@ def _create_flask_app() -> Flask:
         })
         _save_conversation_history(user_id, history, cid)
         _update_conversation_timestamp(user_id, cid)
+        if free_user:
+            _increment_message_count(user_id)
 
         # Auto-title if default
         try:
@@ -1277,6 +1299,19 @@ def _create_flask_app() -> Flask:
             f"Recent logs:\n{tail}"
         )
         return Response(msg, mimetype="text/plain")
+
+    @app.get("/api/_routes")
+    def api_routes():
+        try:
+            rules = []
+            for rule in app.url_map.iter_rules():
+                rules.append({
+                    "rule": str(rule),
+                    "methods": sorted([m for m in (rule.methods or set()) if m not in {"HEAD", "OPTIONS"}])
+                })
+            return jsonify({"routes": sorted(rules, key=lambda r: r["rule"])})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     # Daily reset job: naive timer loop if desired (skipped; relies on external cron in prod)
 
