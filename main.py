@@ -395,17 +395,13 @@ import secrets
 
 HTML_INDEX = """
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content, maximum-scale=1">
-  <title>AIChatPal · Mobile</title>
-  <meta name="description" content="AIChatPal — Clean, fast, mobile-first AI chat powered by Gemini.">
-  <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="format-detection" content="telephone=no">
-  <meta name="HandheldFriendly" content="true">
-  <meta name="google" content="notranslate">
+  <title>AIChatPal</title>
+  <meta name="description" content="AIChatPal — Clean, fast AI chat powered by Gemini.">
+  <meta name="theme-color" content="#0c0c0f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -414,17 +410,13 @@ HTML_INDEX = """
     tailwind.config = {
       darkMode: 'class',
       theme: {
-        fontFamily: {
-          sans: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial']
-        },
+        fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial'] },
         extend: {
           colors: {
-            brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' },
-            ink: '#0b1020'
+            ink: '#0c0c0f'
           },
           boxShadow: {
-            sheet: '0 -8px 30px -10px rgba(2,6,23,.35)',
-            elevated: '0 10px 30px -12px rgba(2,6,23,.35)'
+            raised: '0 8px 24px -10px rgba(0,0,0,.6)'
           }
         }
       }
@@ -432,190 +424,53 @@ HTML_INDEX = """
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
   <style>
-    :root { color-scheme: light dark; -webkit-text-size-adjust: 100%; --composer-pad: .75rem; --bubble-px: 1rem; --bubble-py: .75rem; --accent-from:#4f46e5; --accent-to:#9333ea; --accent-alt:#ec4899; --bg-grad-1: rgba(79,70,229,0.12); --bg-grad-2: rgba(147,51,234,0.10); }
-    * { -webkit-tap-highlight-color: transparent; }
+    :root { color-scheme: dark; -webkit-text-size-adjust: 100%; }
     html, body { height: 100%; }
-    body { overscroll-behavior-y: contain; }
-    .glass { backdrop-filter: saturate(140%) blur(10px); background: rgba(255,255,255,0.55); }
-    .dark .glass { background: rgba(17,24,39,0.55); }
+    body { background: #0c0c0f; }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
-    .composer-safe-bottom { bottom: calc(env(safe-area-inset-bottom) + 0px); }
-    .scroll-smooth { scroll-behavior: smooth; }
-    .msg { max-width: 72ch; padding: var(--bubble-py) var(--bubble-px) !important; }
-    #composer { padding: var(--composer-pad) !important; }
+    .msg { max-width: 72ch; }
     .skeleton { position: relative; overflow: hidden; }
-    .skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.08) 40%, rgba(255,255,255,.18) 60%, transparent 100%); animation: shimmer 1.1s linear infinite; }
+    .skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.06) 40%, rgba(255,255,255,.12) 60%, transparent 100%); animation: shimmer 1.1s linear infinite; }
     @keyframes shimmer { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }
-    .dark .skeleton::after { background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.06) 40%, rgba(255,255,255,.12) 60%, transparent 100%); }
     pre { position: relative; }
     pre code { white-space: pre-wrap; word-break: break-word; }
     .copy-btn { position: absolute; top: .5rem; right: .5rem; }
-
-    /* Accent utilities driven by CSS vars */
-    .bg-accent { background-image: linear-gradient(to right, var(--accent-from), var(--accent-to)); }
-    .bg-accent-br { background-image: linear-gradient(to bottom right, var(--accent-from), var(--accent-to)); }
-    .btn-accent { background-image: linear-gradient(to right, var(--accent-from), var(--accent-to)); color: #fff; }
-    .text-accent-gradient { background-image: linear-gradient(to right, var(--accent-from), var(--accent-alt)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-
-    /* Accent palettes */
-    body.accent-violet { --accent-from:#4f46e5; --accent-to:#9333ea; --accent-alt:#ec4899; --bg-grad-1: rgba(79,70,229,0.12); --bg-grad-2: rgba(147,51,234,0.10); }
-    body.accent-indigo { --accent-from:#6366f1; --accent-to:#3b82f6; --accent-alt:#06b6d4; --bg-grad-1: rgba(99,102,241,0.12); --bg-grad-2: rgba(59,130,246,0.10); }
-    body.accent-emerald { --accent-from:#10b981; --accent-to:#059669; --accent-alt:#22d3ee; --bg-grad-1: rgba(16,185,129,0.12); --bg-grad-2: rgba(5,150,105,0.10); }
-    body.accent-rose { --accent-from:#f43f5e; --accent-to:#ec4899; --accent-alt:#fb7185; --bg-grad-1: rgba(244,63,94,0.12); --bg-grad-2: rgba(236,72,153,0.10); }
-    body.accent-orange { --accent-from:#f97316; --accent-to:#f59e0b; --accent-alt:#f43f5e; --bg-grad-1: rgba(249,115,22,0.12); --bg-grad-2: rgba(245,158,11,0.10); }
-
-    /* Background variants */
-    body.bg-gradient { background-image: radial-gradient(900px 600px at 100% -10%, var(--bg-grad-1), transparent 70%), radial-gradient(800px 600px at -10% 110%, var(--bg-grad-2), transparent 60%); background-color: transparent; }
-    body.bg-solid { background-image: none; }
-
-    /* Density, font, placement */
-    body.compact { --composer-pad:.5rem; --bubble-px:.75rem; --bubble-py:.5rem; }
-    body.ts-lg { font-size: 17px; }
-    body.ts-xl { font-size: 18px; }
-    body.font-system { font-family: ui-sans-serif, system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; }
-    body.hide-fab #fabNewChat { display: none !important; }
-    body.buttons-left #composer .flex.items-end { flex-direction: row-reverse; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-      .glass { backdrop-filter: none; }
-    }
   </style>
 </head>
-<body class="font-sans bg-white dark:bg-ink text-slate-900 dark:text-slate-100 accent-violet bg-solid">
+<body class="font-sans bg-ink text-zinc-100">
   <div class="min-h-[100svh] flex flex-col">
-    <header class="sticky top-0 z-20 glass border-b border-slate-200/70 dark:border-slate-800/70">
-      <div class="px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button id="openSheet" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Open menu">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-          </button>
-          <div class="h-8 w-8 rounded-xl bg-accent-br shadow-elevated"></div>
-          <div>
-            <div class="font-extrabold tracking-tight">AIChatPal</div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400">Gemini powered</div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="newChatTop" class="hidden md:inline-flex px-3 py-2 rounded-lg btn-accent text-white shadow-elevated hover:brightness-110">New chat</button>
-          <button id="toggleTheme" class="px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Toggle theme"><span id="themeIcon">🌙</span></button>
-        </div>
-      </div>
+    <header class="p-4 flex justify-center">
+      <button class="px-4 py-1.5 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow">
+        ✨ Upgrade to Plus
+      </button>
     </header>
 
-    <main class="flex-1 relative">
-      <div id="chat" class="scroll-smooth overflow-y-auto px-3 pt-3 pb-28 md:pb-4 max-w-3xl mx-auto w-full" role="log" aria-live="polite" aria-relevant="additions"></div>
-
-      <button id="scrollBottom" class="hidden fixed right-4 bottom-28 md:bottom-24 z-30 h-10 w-10 rounded-full text-white btn-accent shadow-elevated" aria-label="Scroll to bottom">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 m-auto"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-
-      <button id="fabNewChat" class="md:hidden fixed right-4 bottom-[92px] z-30 h-12 w-12 rounded-full text-white btn-accent shadow-elevated" aria-label="New chat">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 m-auto"><path d="M12 5v14M5 12h14"/></svg>
-      </button>
-
-      <div class="fixed inset-x-0 composer-safe-bottom z-40">
-        <div class="mx-auto max-w-3xl px-3 pb-3">
-          <form id="composer" class="rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated p-3">
-            <div class="flex items-end gap-2">
-              <div class="flex-1">
-                <textarea id="input" rows="1" placeholder="Type your message" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400" ></textarea>
-                <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
-                  <span class="hidden sm:inline">Enter to send, Shift+Enter for new line</span>
-                  <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
-                </div>
-              </div>
-              <button id="send" type="submit" class="h-12 px-5 rounded-xl btn-accent text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                <span>Send</span>
-              </button>
-            </div>
-          </form>
-        </div>
+    <main class="flex-1">
+      <div class="max-w-3xl mx-auto w-full px-3">
+        <div id="chat" class="pt-2 pb-28" role="log" aria-live="polite" aria-relevant="additions"></div>
       </div>
     </main>
 
-    <footer class="hidden md:block text-center text-xs text-slate-500 py-4">AIChatPal — Clean, fast, mobile-first</footer>
+    <div class="fixed inset-x-0 bottom-0 z-40 safe-bottom bg-gradient-to-t from-ink to-ink/95 border-t border-zinc-900/70">
+      <form id="composer" class="max-w-3xl mx-auto px-3 py-3">
+        <div class="flex items-end gap-2">
+          <div class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors">
+            <div class="flex items-center">
+              <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Attach">＋</button>
+              <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
+              <button type="button" id="micBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Voice">🎤</button>
+            </div>
+          </div>
+          <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M6 15l6-6 6 6"/></svg>
+          </button>
+        </div>
+        <div class="mt-2 text-[12px] text-zinc-500" id="limit"></div>
+      </form>
+    </div>
   </div>
 
-  <div id="toasts" class="fixed bottom-[88px] left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
-
-  <div id="sheetBackdrop" class="fixed inset-0 z-40 bg-black/40 hidden"></div>
-  <aside id="sheet" class="fixed inset-x-0 bottom-0 z-50 hidden rounded-t-2xl glass border-t border-slate-200/70 dark:border-slate-800/70 shadow-sheet p-4 max-h-[80svh] overflow-y-auto">
-    <div class="flex items-center justify-between pb-2">
-      <div class="text-sm font-semibold text-slate-600 dark:text-slate-300">Conversations</div>
-      <div class="flex items-center gap-2">
-        <button id="newChatSheet" class="px-3 py-1.5 rounded-lg btn-accent text-white shadow">New</button>
-        <button id="closeSheet" class="px-2 py-1 rounded-lg border border-slate-200/70 dark:border-slate-700/70">Close</button>
-      </div>
-    </div>
-    <div class="relative mb-3">
-      <input id="convSearch" placeholder="Search chats" class="w-full px-10 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-      <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔎</div>
-    </div>
-    <nav id="convoList" class="space-y-1"></nav>
-    <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-      <button id="keyBtn" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Activate key</button>
-      <button id="loginBtn" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Admin login</button>
-      <button id="logoutBtn" class="hidden px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Logout</button>
-    </div>
-
-    <div class="mt-5 border-t border-slate-200/70 dark:border-slate-800/70 pt-3">
-      <div class="text-sm font-semibold text-slate-600 dark:text-slate-300">Appearance</div>
-      <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
-        <label class="space-y-1">
-          <div class="text-xs text-slate-500">Accent</div>
-          <select id="accentSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
-            <option value="violet">Violet</option>
-            <option value="indigo">Indigo</option>
-            <option value="emerald">Emerald</option>
-            <option value="rose">Rose</option>
-            <option value="orange">Orange</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <div class="text-xs text-slate-500">Background</div>
-          <select id="bgSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
-            <option value="solid">Solid</option>
-            <option value="gradient">Gradient</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <div class="text-xs text-slate-500">Density</div>
-          <select id="densitySelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
-            <option value="comfortable">Comfortable</option>
-            <option value="compact">Compact</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <div class="text-xs text-slate-500">Text size</div>
-          <select id="textSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
-            <option value="md">Default</option>
-            <option value="lg">Large</option>
-            <option value="xl">Extra large</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <div class="text-xs text-slate-500">Font</div>
-          <select id="fontSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
-            <option value="inter">Inter</option>
-            <option value="system">System</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <div class="text-xs text-slate-500">Send button</div>
-          <select id="btnPlaceSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
-            <option value="right">Right</option>
-            <option value="left">Left</option>
-          </select>
-        </label>
-        <label class="col-span-2 flex items-center gap-2 px-2 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
-          <input id="fabToggle" type="checkbox" class="h-4 w-4">
-          <span>Show floating new chat button</span>
-        </label>
-      </div>
-    </div>
-  </aside>
+  <div id="toasts" class="fixed bottom-[96px] left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
@@ -625,42 +480,15 @@ HTML_INDEX = """
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
   const limitP = document.getElementById('limit');
-  const scrollBottomBtn = document.getElementById('scrollBottom');
-  const toggleTheme = document.getElementById('toggleTheme');
-  const openSheetBtn = document.getElementById('openSheet');
-  const closeSheetBtn = document.getElementById('closeSheet');
-  const sheet = document.getElementById('sheet');
-  const sheetBackdrop = document.getElementById('sheetBackdrop');
-  const convoList = document.getElementById('convoList');
-  const convSearch = document.getElementById('convSearch');
-  const keyBtn = document.getElementById('keyBtn');
-  const loginBtn = document.getElementById('loginBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const fabNewChat = document.getElementById('fabNewChat');
-  const newChatTop = document.getElementById('newChatTop');
-  const newChatSheet = document.getElementById('newChatSheet');
-  const composer = document.getElementById('composer');
-  const themeIcon = document.getElementById('themeIcon');
 
-  // Appearance controls
-  const accentSelect = document.getElementById('accentSelect');
-  const bgSelect = document.getElementById('bgSelect');
-  const densitySelect = document.getElementById('densitySelect');
-  const textSelect = document.getElementById('textSelect');
-  const fontSelect = document.getElementById('fontSelect');
-  const btnPlaceSelect = document.getElementById('btnPlaceSelect');
-  const fabToggle = document.getElementById('fabToggle');
-
-  let state = { conversations: [], current: null, is_admin: false };
-
-  function showToast(message, variant = 'default', timeout = 2500) {
+  function showToast(message, variant = 'default', timeout = 2200) {
     const host = document.getElementById('toasts');
     const node = document.createElement('div');
-    const colors = variant === 'success' ? 'from-emerald-600 to-green-600' : variant === 'error' ? 'from-rose-600 to-pink-600' : 'from-slate-700 to-slate-900';
-    node.className = `text-sm text-white px-4 py-2 rounded-xl shadow-elevated bg-gradient-to-r ${colors}`;
+    const colors = variant === 'success' ? 'from-emerald-600 to-green-600' : variant === 'error' ? 'from-rose-600 to-pink-600' : 'from-zinc-700 to-zinc-900';
+    node.className = `text-sm text-white px-4 py-2 rounded-xl shadow-raised bg-gradient-to-r ${colors}`;
     node.textContent = message;
     host.appendChild(node);
-    setTimeout(() => { node.style.opacity = '0'; node.style.transform = 'translateY(6px)'; setTimeout(() => node.remove(), 200); }, timeout);
+    setTimeout(() => { node.style.opacity = '0'; node.style.transform = 'translateY(6px)'; setTimeout(() => node.remove(), 180); }, timeout);
   }
 
   function autoResizeTextarea(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
@@ -672,7 +500,7 @@ HTML_INDEX = """
       pre.style.overflow = 'auto';
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'copy-btn px-2 py-1 rounded-md text-xs bg-slate-900/80 text-white dark:bg-white/20 hover:brightness-110';
+      btn.className = 'copy-btn px-2 py-1 rounded-md text-xs bg-black/70 text-white hover:brightness-110';
       btn.textContent = 'Copy';
       btn.addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(pre.innerText.trim()); showToast('Copied','success'); }
@@ -689,29 +517,22 @@ HTML_INDEX = """
     const wrapper = document.createElement('div');
     wrapper.innerHTML = clean;
     wrapper.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
-    wrapper.querySelectorAll('pre').forEach(p => p.classList.add('not-prose','rounded-lg','border','border-slate-200/50','dark:border-slate-700/50'));
+    wrapper.querySelectorAll('pre').forEach(p => p.classList.add('not-prose','rounded-lg','border','border-zinc-800'));
     Prism.highlightAllUnder(wrapper);
     return wrapper.innerHTML;
-  }
-
-  function updateScrollBtn(){
-    const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 120;
-    scrollBottomBtn.classList.toggle('hidden', nearBottom);
   }
 
   function bubble(role, content){
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
-    const bubble = document.createElement('div');
     const isUser = role === 'user';
-    bubble.className = 'msg rounded-2xl shadow ' + (isUser ? 'text-white bg-accent shadow-elevated' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur');
-    bubble.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-slate dark:prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg rounded-2xl px-4 py-3 ' + (isUser ? 'bg-emerald-600 text-white shadow-raised' : 'bg-zinc-900/70 border border-zinc-800');
+    bubble.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
     row.appendChild(bubble);
     chat.appendChild(row);
     if (!isUser) attachCopyHandlers(bubble);
-    row.classList.add('animate-[fadeIn_.2s_ease-out]');
     chat.scrollTop = chat.scrollHeight;
-    updateScrollBtn();
     return { row, bubble };
   }
 
@@ -719,202 +540,38 @@ HTML_INDEX = """
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 justify-start';
     const b = document.createElement('div');
-    b.className = 'msg rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur skeleton';
-    b.innerHTML = '<div class="h-4 w-3/4 mb-2 bg-slate-200/60 dark:bg-slate-700/60 rounded"></div><div class="h-4 w-5/6 bg-slate-200/60 dark:bg-slate-700/60 rounded"></div>';
+    b.className = 'msg rounded-2xl px-4 py-3 bg-zinc-900/70 border border-zinc-800 skeleton';
+    b.innerHTML = '<div class="h-4 w-3/4 mb-2 bg-zinc-800 rounded"></div><div class="h-4 w-5/6 bg-zinc-800 rounded"></div>';
     row.appendChild(b);
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
     return row;
   }
 
-  function setTheme(on){ document.documentElement.classList.toggle('dark', on); localStorage.setItem('theme', on ? 'dark' : 'light'); themeIcon.textContent = on ? '☀️' : '🌙'; }
-  if (localStorage.getItem('theme') === 'dark'){ setTheme(true); } else { themeIcon.textContent = '🌙'; }
-  toggleTheme.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
-
-  // Preferences
-  const defaultPrefs = { accent:'violet', background:'solid', density:'comfortable', textSize:'md', font:'inter', buttons:'right', showFab:true };
-  function loadPrefs(){ try { return Object.assign({}, defaultPrefs, JSON.parse(localStorage.getItem('ui_prefs')||'{}')); } catch(e){ return Object.assign({}, defaultPrefs); } }
-  let prefs = loadPrefs();
-  function savePrefs(){ localStorage.setItem('ui_prefs', JSON.stringify(prefs)); }
-  function applyPrefs(){
-    // Accent classes
-    ['violet','indigo','emerald','rose','orange'].forEach(a => document.body.classList.remove('accent-'+a));
-    document.body.classList.add('accent-'+prefs.accent);
-    // Background
-    document.body.classList.toggle('bg-gradient', prefs.background === 'gradient');
-    document.body.classList.toggle('bg-solid', prefs.background !== 'gradient');
-    // Density
-    document.body.classList.toggle('compact', prefs.density === 'compact');
-    // Text size
-    document.body.classList.toggle('ts-lg', prefs.textSize === 'lg');
-    document.body.classList.toggle('ts-xl', prefs.textSize === 'xl');
-    // Font
-    document.body.classList.toggle('font-system', prefs.font === 'system');
-    // Button placement / FAB
-    document.body.classList.toggle('buttons-left', prefs.buttons === 'left');
-    document.body.classList.toggle('hide-fab', !prefs.showFab);
-
-    // Reflect in controls if present
-    if (accentSelect) accentSelect.value = prefs.accent;
-    if (bgSelect) bgSelect.value = prefs.background;
-    if (densitySelect) densitySelect.value = prefs.density;
-    if (textSelect) textSelect.value = prefs.textSize;
-    if (fontSelect) fontSelect.value = prefs.font;
-    if (btnPlaceSelect) btnPlaceSelect.value = prefs.buttons;
-    if (fabToggle) fabToggle.checked = !!prefs.showFab;
-  }
-  applyPrefs();
-
-  function openSheet(){ sheet.classList.remove('hidden'); sheetBackdrop.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
-  function closeSheet(){ sheet.classList.add('hidden'); sheetBackdrop.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
-  openSheetBtn?.addEventListener('click', openSheet);
-  closeSheetBtn?.addEventListener('click', closeSheet);
-  sheetBackdrop?.addEventListener('click', closeSheet);
-
-  if (accentSelect) accentSelect.addEventListener('change', () => { prefs.accent = accentSelect.value; savePrefs(); applyPrefs(); });
-  if (bgSelect) bgSelect.addEventListener('change', () => { prefs.background = bgSelect.value; savePrefs(); applyPrefs(); });
-  if (densitySelect) densitySelect.addEventListener('change', () => { prefs.density = densitySelect.value; savePrefs(); applyPrefs(); });
-  if (textSelect) textSelect.addEventListener('change', () => { prefs.textSize = textSelect.value; savePrefs(); applyPrefs(); });
-  if (fontSelect) fontSelect.addEventListener('change', () => { prefs.font = fontSelect.value; savePrefs(); applyPrefs(); });
-  if (btnPlaceSelect) btnPlaceSelect.addEventListener('change', () => { prefs.buttons = btnPlaceSelect.value; savePrefs(); applyPrefs(); });
-  if (fabToggle) fabToggle.addEventListener('change', () => { prefs.showFab = !!fabToggle.checked; savePrefs(); applyPrefs(); });
-
-  function renderConversations(){
-    convoList.innerHTML = '';
-    const q = (convSearch?.value || '').toLowerCase();
-    state.conversations
-      .filter(c => !q || (c.title||'').toLowerCase().includes(q))
-      .forEach(c => {
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/60';
-        const left = document.createElement('button');
-        left.className = 'text-left flex-1';
-        left.innerHTML = `<div class=\"text-sm font-medium truncate\">${(c.title || 'Untitled')}</div><div class=\"text-[11px] text-slate-500\">${new Date(c.updated_at).toLocaleString()}</div>`;
-        left.addEventListener('click', async () => { await selectConversation(c.id); closeSheet(); });
-        const actions = document.createElement('div');
-        actions.className = 'flex items-center gap-2';
-        const rename = document.createElement('button');
-        rename.className = 'px-2 py-1 text-xs rounded-lg border border-slate-200/70 dark:border-slate-700/70';
-        rename.textContent = 'Rename';
-        rename.addEventListener('click', async () => {
-          const title = await showPrompt({ title: 'Rename conversation', placeholder: 'New title', confirmText: 'Rename' });
-          if (!title) return;
-          await fetch(`/api/conversations/${c.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
-          await loadConversations();
-        });
-        const del = document.createElement('button');
-        del.className = 'px-2 py-1 text-xs rounded-lg border border-rose-200/70 text-rose-600 dark:border-rose-700/70';
-        del.textContent = 'Delete';
-        del.addEventListener('click', async () => {
-          const ok = await showConfirm({ title: 'Delete conversation', description: 'This action cannot be undone.', confirmText: 'Delete' });
-          if (!ok) return;
-          await fetch(`/api/conversations/${c.id}`, { method: 'DELETE' });
-          await loadConversations();
-          await loadHistory();
-          showToast('Conversation deleted','success');
-        });
-        actions.appendChild(rename);
-        actions.appendChild(del);
-        row.appendChild(left);
-        row.appendChild(actions);
-        convoList.appendChild(row);
-      });
-  }
-
-  async function loadConversations(){
-    const res = await fetch('/api/conversations');
-    const data = await res.json();
-    state.conversations = data.conversations || [];
-    state.current = data.current || (state.conversations[0]?.id || null);
-    state.is_admin = !!data.is_admin;
-    loginBtn.classList.toggle('hidden', state.is_admin);
-    logoutBtn.classList.toggle('hidden', !state.is_admin);
-    renderConversations();
-  }
-
-  async function selectConversation(id){
-    await fetch('/api/select_conversation', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
-    state.current = id;
-    await Promise.all([loadConversations(), loadHistory()]);
-  }
-
-  async function createConversation(title){
-    const res = await fetch('/api/conversations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
-    const data = await res.json();
-    state.current = data.id;
-    await Promise.all([loadConversations(), loadHistory()]);
-  }
-
-  function showPrompt({title='Input', description='', placeholder='', confirmText='Confirm', type='text'}={}){
-    return new Promise(resolve => {
-      const overlay = document.createElement('div');
-      overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
-      overlay.innerHTML = `
-        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
-          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
-            <div class=\"text-lg font-semibold\">${title}</div>
-            <div class=\"text-sm text-slate-500\">${description}</div>
-          </div>
-          <div class=\"p-4 space-y-3\">
-            <input id=\"_prompt_input\" type=\"${type}\" placeholder=\"${placeholder}\" class=\"w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500\" />
-            <div class=\"flex justify-end gap-2\">
-              <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
-              <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white btn-accent\">${confirmText}</button>
-            </div>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      const inputEl = overlay.querySelector('#_prompt_input');
-      setTimeout(() => inputEl?.focus(), 50);
-      overlay.querySelector('#_cancel').addEventListener('click', () => { overlay.remove(); resolve(null); });
-      overlay.querySelector('#_ok').addEventListener('click', () => { const val = inputEl.value.trim(); overlay.remove(); resolve(val || null); });
-      overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') { overlay.remove(); resolve(null); } });
-    });
-  }
-
-  function showConfirm({title='Confirm', description='Are you sure?', confirmText='Confirm'}={}){
-    return new Promise(resolve => {
-      const overlay = document.createElement('div');
-      overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
-      overlay.innerHTML = `
-        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
-          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
-            <div class=\"text-lg font-semibold\">${title}</div>
-            <div class=\"text-sm text-slate-500\">${description}</div>
-          </div>
-          <div class=\"p-4 flex justify-end gap-2\">
-            <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
-            <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white bg-rose-600 hover:bg-rose-500\">${confirmText}</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      overlay.querySelector('#_cancel').addEventListener('click', () => { overlay.remove(); resolve(false); });
-      overlay.querySelector('#_ok').addEventListener('click', () => { overlay.remove(); resolve(true); });
-      overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') { overlay.remove(); resolve(false); } });
-    });
-  }
+  // Always dark by default; preserved for potential future toggle
+  function setTheme(on){ document.documentElement.classList.toggle('dark', on); try { localStorage.setItem('theme', on ? 'dark' : 'light'); } catch(e){} }
+  if (localStorage.getItem('theme') !== 'light'){ setTheme(true); }
 
   async function loadHistory(){
     const res = await fetch('/api/history');
     const data = await res.json();
     chat.innerHTML = '';
-    (data.history || []).forEach(m => bubble(m.role, m.content));
-    if ((data.history || []).length === 0) {
+    const items = data.history || [];
+    if (items.length === 0){
       chat.innerHTML = `
-        <div class=\"w-full grid place-items-center\">
-          <div class=\"max-w-xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
-            <div class=\"inline-flex items-center justify-center h-12 w-12 rounded-xl bg-accent-br text-white shadow-elevated\">✨</div>
-            <h2 class=\"text-xl font-extrabold text-accent-gradient\">Welcome to AIChatPal</h2>
-            <p class=\"text-slate-600 dark:text-slate-300\">Start a conversation and experience fast, beautiful AI answers.</p>
-            <div><button class=\"px-4 py-2 rounded-xl btn-accent text-white\" onclick=\"document.getElementById('input').focus()\">Start typing</button></div>
+        <div class=\"w-full grid place-items-center pt-6\">
+          <div class=\"text-center space-y-3\">
+            <h2 class=\"text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-100\">What's on the agenda today?</h2>
+            <p class=\"text-sm text-zinc-400\">Ask anything below.</p>
           </div>
         </div>`;
+    } else {
+      items.forEach(m => bubble(m.role, m.content));
     }
     if (data.left !== undefined){
       if (data.left < 0) { limitP.textContent = 'Unlimited access active'; }
       else { limitP.textContent = `Free messages left today: ${data.left}`; }
     }
-    updateScrollBtn();
     attachCopyHandlers();
   }
 
@@ -926,7 +583,7 @@ HTML_INDEX = """
     bubble('user', text);
     sendBtn.disabled = true;
     const prev = sendBtn.innerHTML;
-    sendBtn.innerHTML = '<span class="opacity-80">Sending…</span>';
+    sendBtn.innerHTML = '<span class="opacity-80">…</span>';
     const thinkingRow = createThinkingBubble();
     chat.scrollTop = chat.scrollHeight;
     try{
@@ -943,39 +600,17 @@ HTML_INDEX = """
     finally { sendBtn.disabled = false; sendBtn.innerHTML = prev || 'Send'; }
   }
 
-  composer.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
+  document.getElementById('composer').addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
   sendBtn.addEventListener('click', sendMessage);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
   input.addEventListener('input', () => autoResizeTextarea(input));
   input.addEventListener('focus', () => { setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50); });
-  window.addEventListener('resize', () => { chat.scrollTop = chat.scrollHeight; });
-  chat.addEventListener('scroll', updateScrollBtn);
-  scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
 
-  [fabNewChat, newChatTop, newChatSheet].filter(Boolean).forEach(btn => btn.addEventListener('click', async () => { await fetch('/api/newchat', {method:'POST'}); await Promise.all([loadConversations(), loadHistory()]); showToast('New chat created','success'); }));
+  // Non-functional helpers for now
+  document.getElementById('attachBtn')?.addEventListener('click', () => showToast('Attachments not implemented'));
+  document.getElementById('micBtn')?.addEventListener('click', () => showToast('Voice not implemented'));
 
-  keyBtn.addEventListener('click', async () => {
-    const key = await showPrompt({ title: 'Activate key', description: 'Enter your access key to unlock unlimited usage.', placeholder: 'Your key', confirmText: 'Activate' });
-    if (!key) return;
-    const res = await fetch('/api/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
-    const data = await res.json();
-    if (data.ok) { showToast('Key activated!','success'); await loadHistory(); } else { showToast(data.error || 'Invalid key','error'); }
-  });
-
-  loginBtn.addEventListener('click', async () => {
-    const u = await showPrompt({ title: 'Admin login', placeholder: 'Username', confirmText: 'Next' });
-    if (!u) return;
-    const p = await showPrompt({ title: 'Admin login', placeholder: 'Password', confirmText: 'Login', type: 'password' });
-    if (!p) return;
-    const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u, password:p}) });
-    const data = await res.json();
-    if (data.ok) { await loadConversations(); await loadHistory(); showToast('Logged in as admin','success'); } else { showToast(data.error || 'Login failed','error'); }
-  });
-  logoutBtn.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await loadConversations(); await loadHistory(); showToast('Logged out','success'); });
-
-  if (convSearch) convSearch.addEventListener('input', renderConversations);
-
-  Promise.all([loadConversations(), loadHistory()]);
+  loadHistory();
   </script>
 </body>
 </html>
