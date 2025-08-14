@@ -397,264 +397,162 @@ HTML_INDEX = """
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> 
-  <title>AIChatPal · Premium</title>
-  <meta name="description" content="AIChatPal — fast, elegant AI chat powered by Gemini.">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>AIChatPal · Mobile</title>
+  <meta name="description" content="AIChatPal — Clean, fast, mobile-first AI chat powered by Gemini.">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
-  <meta property="og:title" content="AIChatPal · Premium">
-  <meta property="og:description" content="A beautiful, responsive AI chat experience powered by Gemini.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%236366f1' offset='0'/><stop stop-color='%237b61ff' offset='1'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><path d='M36 12L12 36h14l-2 16 24-24H34l2-16z' fill='white' opacity='.95'/></svg>">
-  <script src="https://cdn.tailwindcss.com?plugins=typography,forms,line-clamp"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=typography,forms"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         fontFamily: {
-          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'Apple Color Emoji', 'Segoe UI Emoji']
+          sans: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial']
         },
         extend: {
           colors: {
-            brand: {
-              50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8',
-              500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81'
-            }
+            brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' },
+            ink: '#0b1020'
           },
           boxShadow: {
-            elevated: '0 10px 30px -12px rgba(2,6,23,0.35)'
-          },
-          keyframes: {
-            shimmer: { '0%': { backgroundPosition: '0% 50%' }, '100%': { backgroundPosition: '100% 50%'} },
-            fadeInUp: { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-            float: { '0%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-14px)' }, '100%': { transform: 'translateY(0px)' } },
-            spin: { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
-            typing: { '0%, 80%, 100%': { transform: 'translateY(0)', opacity: .6 }, '40%': { transform: 'translateY(-4px)', opacity: 1 } }
-          },
-          animation: {
-            shimmer: 'shimmer 2s ease-in-out infinite',
-            fadeInUp: 'fadeInUp .25s ease-out both',
-            float: 'float 12s ease-in-out infinite',
-            spin: 'spin 1s linear infinite'
+            sheet: '0 -8px 30px -10px rgba(2,6,23,.35)',
+            elevated: '0 10px 30px -12px rgba(2,6,23,.35)'
           }
         }
-      },
-      darkMode: 'class'
+      }
     };
   </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
   <style>
     :root { color-scheme: light dark; }
-    .glass { backdrop-filter: saturate(140%) blur(14px); background: rgba(255,255,255,0.55); }
-    .dark .glass { background: rgba(17,24,39,0.5); }
-    .noise-overlay { position: fixed; inset: 0; pointer-events: none; z-index: -5; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.025"/></svg>'); background-repeat: repeat; }
-    .scroll-area { height: calc(100vh - 240px); }
-    @supports (height: 100dvh) {
-      .scroll-area { height: calc(100dvh - 220px); }
-    }
-    @media (max-width: 768px) {
-      .scroll-area { height: calc(100svh - 180px - env(safe-area-inset-bottom)); }
-      .glass { backdrop-filter: saturate(120%) blur(8px); }
-      .decorative-bg { display: none; }
-    }
-    .mobile-safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
-    .safe-fab { bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
-    .scroll-area { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-    body.drawer-open { overflow: hidden; }
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    .glass { backdrop-filter: saturate(140%) blur(10px); background: rgba(255,255,255,0.55); }
+    .dark .glass { background: rgba(17,24,39,0.55); }
+    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+    .composer-safe-bottom { bottom: calc(env(safe-area-inset-bottom) + 0px); }
+    .scroll-smooth { scroll-behavior: smooth; }
     .msg { max-width: 72ch; }
-    .typing-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: .6; display: inline-block; animation: typing 1.2s infinite ease-in-out; }
-    .typing-dot:nth-child(2) { animation-delay: .15s }
-    .typing-dot:nth-child(3) { animation-delay: .30s }
-    .spinner { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid rgba(255,255,255,.45); border-top-color: transparent; }
-    ::-webkit-scrollbar { width: 10px; height: 10px }
-    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #475569, #1f2937); border-radius: 999px }
-    .dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #94a3b8, #475569) }
-
-    /* Luxury palette and utilities */
-    :root {
-      --lux-1: #4f46e5; /* indigo-600 */
-      --lux-2: #7c3aed; /* violet-600 */
-      --lux-3: #c026d3; /* fuchsia-600 (muted) */
-    }
-    .dark:root {
-      --lux-1: #6366f1;
-      --lux-2: #7c3aed;
-      --lux-3: #d946ef;
-    }
-    .lux-gradient { background-image: linear-gradient(90deg, var(--lux-1), var(--lux-2), var(--lux-3)); }
-    .lux-bubble-user {
-      background-image: linear-gradient(90deg, var(--lux-1), var(--lux-2), var(--lux-3));
-      color: #fff;
-      box-shadow: 0 10px 30px -12px rgba(2,6,23,0.35);
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-
-    /* Reduced motion/softer visuals */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
-      .typing-dot { animation: none !important; opacity: .5; }
-      .glass { backdrop-filter: none; background: rgba(255,255,255,0.75); }
-      .dark .glass { background: rgba(17,24,39,0.75); }
+      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+      .glass { backdrop-filter: none; }
     }
-    /* Deluxe dark theme backgrounds */
-    body { background-color: #f8fafc; }
-    .dark body { background-color: #0b1020; }
-
-    /* Elevated code blocks */
-    .prose pre { position: relative; border-radius: 14px; overflow: auto; border: 1px solid rgba(15,23,42,0.12); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(2,6,23,0.04); }
-    .prose pre code { background: transparent !important; }
-    .prose pre { background: rgba(248,250,252,0.9); }
-    .dark .prose pre { background: rgba(15,23,42,0.9); border-color: rgba(148,163,184,0.18); box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px -12px rgba(2,6,23,0.35); }
-    .code-badge { position: absolute; top: 8px; left: 8px; font-size: 10px; line-height: 1; letter-spacing: .04em; padding: 4px 6px; border-radius: 999px; background: rgba(2,6,23,0.06); color: #0f172a; border: 1px solid rgba(2,6,23,0.08); }
-    .dark .code-badge { background: rgba(255,255,255,0.08); color: #e2e8f0; border-color: rgba(255,255,255,0.10); }
-    .copy-btn { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; padding: 4px 8px; border-radius: 10px; color: #ffffff; background: rgba(2,6,23,0.6); }
-    .copy-btn:hover { filter: brightness(1.1); }
-    .dark .copy-btn { background: rgba(255,255,255,0.12); }
   </style>
 </head>
-<body class="font-sans bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.12),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.10),transparent)] dark:bg-[radial-gradient(1200px_500px_at_10%_-10%,rgba(99,102,241,.25),transparent),radial-gradient(1000px_500px_at_90%_10%,rgba(236,72,153,.18),transparent)] text-slate-900 dark:text-slate-100">
-  <!-- Decorative animated background -->
-  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden decorative-bg">
-    <div class="absolute -top-20 -left-20 h-80 w-80 rounded-full blur-3xl opacity-40 dark:opacity-30 bg-gradient-to-br from-brand-400 to-purple-500 animate-float"></div>
-    <div class="absolute top-1/3 -right-16 h-72 w-72 rounded-full blur-3xl opacity-30 dark:opacity-25 bg-gradient-to-br from-pink-400 to-orange-400 [animation-delay:4s] animate-float"></div>
-    <div class="absolute bottom-0 left-1/3 h-64 w-64 rounded-full blur-3xl opacity-25 dark:opacity-20 bg-gradient-to-br from-emerald-400 to-teal-500 [animation-delay:8s] animate-float"></div>
-  </div>
-  <div class="noise-overlay" aria-hidden="true"></div>
-  <div class="min-h-[100svh] flex text-[15px] md:text-base leading-relaxed">
-    <!-- Sidebar -->
-    <aside class="hidden md:flex fixed md:static inset-y-0 left-0 z-40 w-80 flex-col border-r border-slate-200 dark:border-slate-800 glass">
-      <div class="p-5 flex items-center justify-between">
+<body class="font-sans bg-white dark:bg-ink text-slate-900 dark:text-slate-100">
+  <div class="min-h-[100svh] flex flex-col">
+    <header class="sticky top-0 z-20 glass border-b border-slate-200/70 dark:border-slate-800/70">
+      <div class="px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 shadow-elevated"></div>
+          <button id="openSheet" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Open menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </button>
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 shadow-elevated"></div>
           <div>
             <div class="font-extrabold tracking-tight">AIChatPal</div>
-            <div class="text-xs text-slate-500 dark:text-slate-400">Your premium AI chat</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">Gemini powered</div>
           </div>
         </div>
-        <button id="themeToggle" class="px-2 py-1 text-xs rounded-lg bg-slate-200/70 dark:bg-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-          <span class="inline dark:hidden">☀️</span>
-          <span class="hidden dark:inline">🌙</span>
-        </button>
-      </div>
-      <div class="px-5">
-        <button id="newChatBtn" class="w-full mb-4 px-4 py-2.5 rounded-xl lux-gradient text-white shadow-elevated transition hover:brightness-110"><span class="inline-flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span>New chat</span></span></button>
-        <div class="relative mb-4">
-          <input id="convSearch" placeholder="Search chats" class="w-full px-10 py-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></div>
-        </div>
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Saved chats</div>
-      </div>
-      <nav id="convoList" class="flex-1 overflow-y-auto px-3 space-y-1"></nav>
-      <div class="p-5 border-t border-slate-200 dark:border-slate-800 space-y-2">
-        <button id="keyBtn" class="w-full px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Activate key</button>
-        <div class="flex gap-2">
-          <button id="loginBtn" class="flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Admin login</button>
-          <button id="logoutBtn" class="hidden flex-1 px-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Logout</button>
+        <div class="flex items-center gap-2">
+          <button id="newChatTop" class="hidden md:inline-flex px-3 py-2 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-elevated hover:brightness-110">New chat</button>
+          <button id="toggleTheme" class="px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Toggle theme">🌙</button>
         </div>
       </div>
-    </aside>
-    <div id="drawerBackdrop" class="md:hidden fixed inset-0 z-30 bg-black/40 hidden"></div>
+    </header>
 
-    <!-- Main -->
-    <div class="flex-1 flex flex-col">
-      <header class="sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <button id="mobileMenu" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
-            <h1 class="text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">AIChatPal</h1>
-            <span class="text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-brand-600/15 to-purple-600/15 text-brand-700 dark:text-brand-200 border border-brand-500/20">Gemini</span>
-            <span id="adminBadge" class="hidden text-[11px] px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">Admin</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="newChatBtnTop" class="px-3 py-2 rounded-lg lux-gradient text-white shadow-elevated hover:brightness-110 transition"><span class="inline-flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span>New chat</span></span></button>
-            <button id="keyBtnTop" class="px-3 py-2 rounded-lg bg-gradient-to-r from-pink-600/20 to-orange-600/20 text-pink-700 dark:text-pink-200 hover:from-pink-600/30 hover:to-orange-600/30 transition">Activate key</button>
-          </div>
-        </div>
-      </header>
+    <main class="flex-1 relative">
+      <div id="chat" class="scroll-smooth overflow-y-auto px-3 pt-3 pb-28 md:pb-4 max-w-3xl mx-auto w-full"></div>
 
-      <main class="flex-1">
-        <div class="max-w-6xl mx-auto p-4 grid grid-cols-1">
-          <div id="chat" class="scroll-area overflow-y-auto rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-4 md:p-6 space-y-4 md:space-y-5 shadow-elevated"></div>
-          <div class="mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 glass p-3 md:p-4 shadow-elevated mobile-safe-bottom">
+      <button id="scrollBottom" class="hidden fixed right-4 bottom-28 md:bottom-24 z-30 h-10 w-10 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated">↓</button>
+
+      <button id="fabNewChat" class="md:hidden fixed right-4 bottom-[92px] z-30 h-12 w-12 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated">+</button>
+
+      <div class="fixed inset-x-0 composer-safe-bottom z-40">
+        <div class="mx-auto max-w-3xl px-3 pb-3">
+          <div class="rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated p-3">
             <div class="flex items-end gap-2">
               <div class="flex-1">
-                <textarea id="input" rows="2" placeholder="Type your message..." class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 md:p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400"></textarea>
+                <textarea id="input" rows="1" placeholder="Type your message" class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400" ></textarea>
                 <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
-                  <div class="flex items-center gap-2">
-                    <span class="hidden sm:inline">Shift+Enter for new line</span>
-                  </div>
+                  <span class="hidden sm:inline">Enter to send, Shift+Enter for new line</span>
                   <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
                 </div>
               </div>
-              <button id="send" class="h-12 md:h-12 px-5 md:px-6 rounded-xl lux-gradient text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated transition"><span class="inline-flex items-center gap-2"><span>Send</span><i data-lucide="arrow-right" class="w-4 h-4"></i></span></button>
+              <button id="send" class="h-12 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated">Send</button>
             </div>
           </div>
         </div>
+      </div>
+    </main>
 
-        <button id="fabNewChat" class="md:hidden fixed safe-fab right-5 h-12 w-12 rounded-full shadow-elevated text-white lux-gradient flex items-center justify-center"><i data-lucide="plus" class="w-6 h-6"></i></button>
-        <button id="scrollBottom" class="hidden fixed safe-fab right-5 md:right-10 z-40 h-10 w-10 rounded-full shadow-elevated text-white lux-gradient flex items-center justify-center"><i data-lucide="arrow-down" class="w-5 h-5"></i></button>
-      </main>
-
-      <footer class="text-center text-xs text-slate-500 py-4">Powered by Gemini</footer>
-    </div>
+    <footer class="hidden md:block text-center text-xs text-slate-500 py-4">AIChatPal — Clean, fast, mobile-first</footer>
   </div>
 
-  <!-- Toasts -->
-  <div id="toasts" class="fixed bottom-5 left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
+  <div id="toasts" class="fixed bottom-[88px] left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
 
-  <!-- External libs -->
+  <div id="sheetBackdrop" class="fixed inset-0 z-40 bg-black/40 hidden"></div>
+  <aside id="sheet" class="fixed inset-x-0 bottom-0 z-50 hidden rounded-t-2xl glass border-t border-slate-200/70 dark:border-slate-800/70 shadow-sheet p-4 max-h-[80svh] overflow-y-auto">
+    <div class="flex items-center justify-between pb-2">
+      <div class="text-sm font-semibold text-slate-600 dark:text-slate-300">Conversations</div>
+      <div class="flex items-center gap-2">
+        <button id="newChatSheet" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow">New</button>
+        <button id="closeSheet" class="px-2 py-1 rounded-lg border border-slate-200/70 dark:border-slate-700/70">Close</button>
+      </div>
+    </div>
+    <div class="relative mb-3">
+      <input id="convSearch" placeholder="Search chats" class="w-full px-10 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔎</div>
+    </div>
+    <nav id="convoList" class="space-y-1"></nav>
+    <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+      <button id="keyBtn" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Activate key</button>
+      <button id="loginBtn" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Admin login</button>
+      <button id="logoutBtn" class="hidden px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Logout</button>
+    </div>
+  </aside>
+
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-
   <script>
-  // State and elements
   const chat = document.getElementById('chat');
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
-  const newChatBtn = document.getElementById('newChatBtn');
-  const newChatBtnTop = document.getElementById('newChatBtnTop');
-  const keyBtn = document.getElementById('keyBtn');
-  const keyBtnTop = document.getElementById('keyBtnTop');
   const limitP = document.getElementById('limit');
+  const scrollBottomBtn = document.getElementById('scrollBottom');
+  const toggleTheme = document.getElementById('toggleTheme');
+  const openSheetBtn = document.getElementById('openSheet');
+  const closeSheetBtn = document.getElementById('closeSheet');
+  const sheet = document.getElementById('sheet');
+  const sheetBackdrop = document.getElementById('sheetBackdrop');
   const convoList = document.getElementById('convoList');
-  const renameBtn = document.getElementById('renameBtn'); // legacy id not present; guarded below
-  const deleteBtn = document.getElementById('deleteBtn'); // legacy id not present; guarded below
+  const convSearch = document.getElementById('convSearch');
+  const keyBtn = document.getElementById('keyBtn');
   const loginBtn = document.getElementById('loginBtn');
   const logoutBtn = document.getElementById('logoutBtn');
-  const adminBadge = document.getElementById('adminBadge');
-  const themeToggle = document.getElementById('themeToggle');
-  const mobileMenuBtn = document.getElementById('mobileMenu');
-  const convSearch = document.getElementById('convSearch');
   const fabNewChat = document.getElementById('fabNewChat');
-  const scrollBottomBtn = document.getElementById('scrollBottom');
+  const newChatTop = document.getElementById('newChatTop');
+  const newChatSheet = document.getElementById('newChatSheet');
 
   let state = { conversations: [], current: null, is_admin: false };
 
-  // Utilities
-  function showToast(message, variant = 'default', timeout = 3000) {
+  function showToast(message, variant = 'default', timeout = 2500) {
     const host = document.getElementById('toasts');
     const node = document.createElement('div');
     const colors = variant === 'success' ? 'from-emerald-600 to-green-600' : variant === 'error' ? 'from-rose-600 to-pink-600' : 'from-slate-700 to-slate-900';
-    node.className = `animate-fadeInUp text-sm text-white px-4 py-2 rounded-xl shadow-elevated bg-gradient-to-r ${colors}`;
+    node.className = `text-sm text-white px-4 py-2 rounded-xl shadow-elevated bg-gradient-to-r ${colors}`;
     node.textContent = message;
     host.appendChild(node);
     setTimeout(() => { node.style.opacity = '0'; node.style.transform = 'translateY(6px)'; setTimeout(() => node.remove(), 200); }, timeout);
   }
 
-  function autoResizeTextarea(el) {
-    el.style.height = 'auto';
-    el.style.height = (el.scrollHeight) + 'px';
-  }
+  function autoResizeTextarea(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
 
-  function fmtTime(ts) { try { return new Date(ts).toLocaleString(); } catch { return ''; } }
-
-  // Markdown rendering with sanitization and code highlighting
   marked.setOptions({ breaks: true, gfm: true });
   function renderMarkdownToHtml(md) {
     const dirty = marked.parse(md || '');
@@ -662,130 +560,106 @@ HTML_INDEX = """
     const wrapper = document.createElement('div');
     wrapper.innerHTML = clean;
     Prism.highlightAllUnder(wrapper);
-    // Add copy buttons to code blocks
-    wrapper.querySelectorAll('pre').forEach(pre => {
-      const codeEl = pre.querySelector('code');
-      const lang = (codeEl?.className || '').split('language-')[1] || '';
-      // Badge
-      if (lang) {
-        const badge = document.createElement('span');
-        badge.className = 'code-badge';
-        badge.textContent = lang.toUpperCase();
-        pre.appendChild(badge);
-      }
-      // Copy button
-      const btn = document.createElement('button');
-      btn.className = 'copy-btn';
-      btn.innerHTML = '<span>Copy</span>';
-      btn.addEventListener('click', () => {
-        const code = pre.querySelector('code')?.innerText || '';
-        navigator.clipboard.writeText(code).then(() => showToast('Code copied', 'success'));
-      });
-      pre.classList.add('relative');
-      pre.appendChild(btn);
-    });
     return wrapper.innerHTML;
   }
 
-  function updateScrollBtn() {
+  function updateScrollBtn(){
     const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 120;
     scrollBottomBtn.classList.toggle('hidden', nearBottom);
   }
 
-  // Message rendering
-  function avatarFor(role) {
-    if (role === 'user') {
-      return '<div class="h-8 w-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-600"></div>';
-    }
-    return '<div class="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 shadow-elevated"></div>';
-  }
-
-  function renderMessage(role, content) {
+  function bubble(role, content){
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
-
     const bubble = document.createElement('div');
     const isUser = role === 'user';
-    bubble.className = 'msg rounded-2xl px-4 py-3 md:px-5 md:py-3.5 shadow ' + (isUser ? 'lux-bubble-user' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-sm');
-    bubble.innerHTML = isUser ? `<div class="tracking-tight">${content.replace(/</g,'&lt;')}</div>` : `<div class="prose prose-slate dark:prose-invert max-w-none md:prose-lg prose-p:leading-relaxed prose-headings:tracking-tight prose-headings:font-semibold">${renderMarkdownToHtml(content)}</div>`;
-
-    if (isUser) {
-      row.appendChild(bubble);
-      row.appendChild(createElementFromHTML(avatarFor(role)));
-    } else {
-      row.appendChild(createElementFromHTML(avatarFor(role)));
-      row.appendChild(bubble);
-    }
-
-    row.classList.add('animate-fadeInUp');
+    bubble.className = 'msg rounded-2xl px-4 py-3 shadow ' + (isUser ? 'text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur');
+    bubble.innerHTML = isUser ? `<div class="tracking-tight">${content.replace(/</g,'&lt;')}</div>` : `<div class="prose prose-slate dark:prose-invert max-w-none">${renderMarkdownToHtml(content)}</div>`;
+    if (isUser) { row.appendChild(bubble); }
+    else { row.appendChild(bubble); }
+    row.classList.add('animate-[fadeIn_.2s_ease-out]');
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
     updateScrollBtn();
   }
 
-  function createElementFromHTML(htmlString) {
-    const div = document.createElement('div');
-    div.innerHTML = htmlString.trim();
-    return div.firstChild;
-  }
+  function setTheme(on){ document.documentElement.classList.toggle('dark', on); localStorage.setItem('theme', on ? 'dark' : 'light'); }
+  if (localStorage.getItem('theme') === 'dark'){ setTheme(true); }
+  toggleTheme.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
 
-  function renderThinking() {
-    const row = document.createElement('div');
-    row.className = 'w-full flex items-start gap-3 justify-start';
-    const bubble = document.createElement('div');
-    bubble.className = 'msg rounded-2xl px-4 py-3 shadow italic text-slate-500 bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70';
-    bubble.innerHTML = '<div class="flex items-center gap-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
-    row.appendChild(createElementFromHTML(avatarFor('assistant')));
-    row.appendChild(bubble);
-    chat.appendChild(row);
-    chat.scrollTop = chat.scrollHeight;
-    updateScrollBtn();
-    return row;
-  }
+  function openSheet(){ sheet.classList.remove('hidden'); sheetBackdrop.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+  function closeSheet(){ sheet.classList.add('hidden'); sheetBackdrop.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+  openSheetBtn?.addEventListener('click', openSheet);
+  closeSheetBtn?.addEventListener('click', closeSheet);
+  sheetBackdrop?.addEventListener('click', closeSheet);
 
-  function renderConversations() {
+  function renderConversations(){
     convoList.innerHTML = '';
     const q = (convSearch?.value || '').toLowerCase();
     state.conversations
       .filter(c => !q || (c.title||'').toLowerCase().includes(q))
       .forEach(c => {
-        const a = document.createElement('button');
-        a.className = 'w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 flex items-center justify-between border border-transparent ' + (state.current === c.id ? 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/70' : '');
-        const left = document.createElement('div');
-        left.innerHTML = `<div class="text-sm font-medium truncate">${(c.title || 'Untitled')}</div><div class="text-[11px] text-slate-500">${fmtTime(c.updated_at)}</div>`;
-        a.appendChild(left);
-        a.addEventListener('click', async () => { await selectConversation(c.id); });
-        convoList.appendChild(a);
-    });
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/60';
+        const left = document.createElement('button');
+        left.className = 'text-left flex-1';
+        left.innerHTML = `<div class="text-sm font-medium truncate">${(c.title || 'Untitled')}</div><div class="text-[11px] text-slate-500">${new Date(c.updated_at).toLocaleString()}</div>`;
+        left.addEventListener('click', async () => { await selectConversation(c.id); closeSheet(); });
+        const actions = document.createElement('div');
+        actions.className = 'flex items-center gap-2';
+        const rename = document.createElement('button');
+        rename.className = 'px-2 py-1 text-xs rounded-lg border border-slate-200/70 dark:border-slate-700/70';
+        rename.textContent = 'Rename';
+        rename.addEventListener('click', async () => {
+          const title = await showPrompt({ title: 'Rename conversation', placeholder: 'New title', confirmText: 'Rename' });
+          if (!title) return;
+          await fetch(`/api/conversations/${c.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
+          await loadConversations();
+        });
+        const del = document.createElement('button');
+        del.className = 'px-2 py-1 text-xs rounded-lg border border-rose-200/70 text-rose-600 dark:border-rose-700/70';
+        del.textContent = 'Delete';
+        del.addEventListener('click', async () => {
+          const ok = await showConfirm({ title: 'Delete conversation', description: 'This action cannot be undone.', confirmText: 'Delete' });
+          if (!ok) return;
+          await fetch(`/api/conversations/${c.id}`, { method: 'DELETE' });
+          await loadConversations();
+          await loadHistory();
+          showToast('Conversation deleted','success');
+        });
+        actions.appendChild(rename);
+        actions.appendChild(del);
+        row.appendChild(left);
+        row.appendChild(actions);
+        convoList.appendChild(row);
+      });
   }
 
-  async function loadConversations() {
+  async function loadConversations(){
     const res = await fetch('/api/conversations');
     const data = await res.json();
     state.conversations = data.conversations || [];
     state.current = data.current || (state.conversations[0]?.id || null);
     state.is_admin = !!data.is_admin;
-    renderConversations();
-    adminBadge.classList.toggle('hidden', !state.is_admin);
     loginBtn.classList.toggle('hidden', state.is_admin);
     logoutBtn.classList.toggle('hidden', !state.is_admin);
+    renderConversations();
   }
 
-  async function selectConversation(id) {
+  async function selectConversation(id){
     await fetch('/api/select_conversation', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
     state.current = id;
     await Promise.all([loadConversations(), loadHistory()]);
   }
 
-  async function createConversation(title) {
+  async function createConversation(title){
     const res = await fetch('/api/conversations', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
     const data = await res.json();
     state.current = data.id;
     await Promise.all([loadConversations(), loadHistory()]);
   }
 
-  // Modal prompts
-  function showPrompt({title = 'Input', description = '', placeholder = '', confirmText = 'Confirm', type = 'text', confirmVariant = 'default'} = {}) {
+  function showPrompt({title='Input', description='', placeholder='', confirmText='Confirm', type='text'}={}){
     return new Promise(resolve => {
       const overlay = document.createElement('div');
       overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
@@ -799,7 +673,7 @@ HTML_INDEX = """
             <input id="_prompt_input" type="${type}" placeholder="${placeholder}" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500" />
             <div class="flex justify-end gap-2">
               <button id="_cancel" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Cancel</button>
-              <button id="_ok" class="px-3 py-2 rounded-xl text-white ${confirmVariant==='danger' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500'}">${confirmText}</button>
+              <button id="_ok" class="px-3 py-2 rounded-xl text-white bg-gradient-to-r from-brand-600 to-purple-600">${confirmText}</button>
             </div>
           </div>
         </div>`;
@@ -812,7 +686,7 @@ HTML_INDEX = """
     });
   }
 
-  function showConfirm({title='Confirm', description='Are you sure?', confirmText='Confirm'} = {}) {
+  function showConfirm({title='Confirm', description='Are you sure?', confirmText='Confirm'}={}){
     return new Promise(resolve => {
       const overlay = document.createElement('div');
       overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
@@ -834,101 +708,72 @@ HTML_INDEX = """
     });
   }
 
-  function renderEmptyState() {
-    chat.innerHTML = `
-      <div class="w-full grid place-items-center">
-        <div class="max-w-2xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
-          <div class="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-elevated">✨</div>
-          <h2 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">Welcome to AIChatPal</h2>
-          <p class="text-slate-600 dark:text-slate-300">Start a conversation and experience fast, beautiful AI answers with code highlighting, dark mode, and more.</p>
-          <div><button class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white hover:from-brand-500 hover:to-purple-500" onclick="document.getElementById('input').focus()">Start typing</button></div>
-        </div>
-      </div>`;
-  }
-
-  // History / chat
-  async function loadHistory() {
+  async function loadHistory(){
     const res = await fetch('/api/history');
     const data = await res.json();
     chat.innerHTML = '';
-    (data.history || []).forEach(m => renderMessage(m.role, m.content));
-    if ((data.history || []).length === 0) { renderEmptyState(); }
-    if (data.left !== undefined) {
-      if (data.left < 0) {
-        limitP.textContent = 'Unlimited access active';
-      } else {
-        limitP.textContent = `Free messages left today: ${data.left}`;
-      }
+    (data.history || []).forEach(m => bubble(m.role, m.content));
+    if ((data.history || []).length === 0) {
+      chat.innerHTML = `
+        <div class="w-full grid place-items-center">
+          <div class="max-w-xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
+            <div class="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-elevated">✨</div>
+            <h2 class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">Welcome to AIChatPal</h2>
+            <p class="text-slate-600 dark:text-slate-300">Start a conversation and experience fast, beautiful AI answers.</p>
+            <div><button class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white" onclick="document.getElementById('input').focus()">Start typing</button></div>
+          </div>
+        </div>`;
+    }
+    if (data.left !== undefined){
+      if (data.left < 0) { limitP.textContent = 'Unlimited access active'; }
+      else { limitP.textContent = `Free messages left today: ${data.left}`; }
     }
     updateScrollBtn();
   }
 
-  async function sendMessage() {
+  async function sendMessage(){
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
     autoResizeTextarea(input);
-    renderMessage('user', text);
+    bubble('user', text);
     sendBtn.disabled = true;
-    const previous = sendBtn.innerHTML;
-    sendBtn.innerHTML = '<span class="inline-flex items-center gap-2"><span class="spinner animate-spin"></span> Sending…</span>';
-    const thinkingNode = renderThinking();
-    try {
-      const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
+    const prev = sendBtn.innerHTML;
+    sendBtn.textContent = 'Sending…';
+    const thinking = document.createElement('div');
+    thinking.className = 'w-full flex justify-start mt-1 text-slate-500 italic';
+    thinking.textContent = 'Thinking…';
+    chat.appendChild(thinking);
+    chat.scrollTop = chat.scrollHeight;
+    try{
+      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text}) });
       const data = await res.json();
-      thinkingNode.remove();
-      if (data.error) {
-        renderMessage('assistant', `Error: ${data.error}`);
-        showToast(data.error, 'error');
-      } else {
-        renderMessage('assistant', data.reply || '(No response)');
-        if (data.left !== undefined) {
-          if (data.left < 0) { limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; }
-        }
+      thinking.remove();
+      if (data.error){ bubble('assistant', `Error: ${data.error}`); showToast(data.error, 'error'); }
+      else {
+        bubble('assistant', data.reply || '(No response)');
+        if (data.left !== undefined){ if (data.left < 0){ limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; } }
       }
-    } catch(e) {
-      thinkingNode.remove();
-      renderMessage('assistant', 'Network error.');
-      showToast('Network error', 'error');
-    } finally {
-      sendBtn.disabled = false;
-      sendBtn.innerHTML = previous || 'Send';
-    }
+    }catch(e){ thinking.remove(); bubble('assistant', 'Network error.'); showToast('Network error','error'); }
+    finally { sendBtn.disabled = false; sendBtn.innerHTML = prev || 'Send'; }
   }
 
-  // Actions
   sendBtn.addEventListener('click', sendMessage);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
   input.addEventListener('input', () => autoResizeTextarea(input));
+  input.addEventListener('focus', () => { setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50); });
+  window.addEventListener('resize', () => { chat.scrollTop = chat.scrollHeight; });
+  chat.addEventListener('scroll', updateScrollBtn);
+  scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
 
-  const newChatHandlers = [newChatBtn, newChatBtnTop, fabNewChat].filter(Boolean);
-  newChatHandlers.forEach(btn => btn.addEventListener('click', async () => { await fetch('/api/newchat', {method: 'POST'}); await Promise.all([loadConversations(), loadHistory()]); showToast('New chat created','success'); }));
+  [fabNewChat, newChatTop, newChatSheet].filter(Boolean).forEach(btn => btn.addEventListener('click', async () => { await fetch('/api/newchat', {method:'POST'}); await Promise.all([loadConversations(), loadHistory()]); showToast('New chat created','success'); }));
 
-  const keyHandlers = [keyBtn, keyBtnTop].filter(Boolean);
-  keyHandlers.forEach(btn => btn.addEventListener('click', async () => {
+  keyBtn.addEventListener('click', async () => {
     const key = await showPrompt({ title: 'Activate key', description: 'Enter your access key to unlock unlimited usage.', placeholder: 'Your key', confirmText: 'Activate' });
     if (!key) return;
     const res = await fetch('/api/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
     const data = await res.json();
     if (data.ok) { showToast('Key activated!','success'); await loadHistory(); } else { showToast(data.error || 'Invalid key','error'); }
-  }));
-
-  if (renameBtn) renameBtn.addEventListener('click', async () => {
-    if (!state.current) return;
-    const title = await showPrompt({ title: 'Rename conversation', placeholder: 'New title', confirmText: 'Rename' });
-    if (!title) return;
-    await fetch(`/api/conversations/${state.current}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title}) });
-    await loadConversations();
-  });
-
-  if (deleteBtn) deleteBtn.addEventListener('click', async () => {
-    if (!state.current) return;
-    const ok = await showConfirm({ title: 'Delete conversation', description: 'This action cannot be undone.', confirmText: 'Delete' });
-    if (!ok) return;
-    await fetch(`/api/conversations/${state.current}`, { method: 'DELETE' });
-    await loadConversations();
-    await loadHistory();
-    showToast('Conversation deleted','success');
   });
 
   loginBtn.addEventListener('click', async () => {
@@ -940,33 +785,11 @@ HTML_INDEX = """
     const data = await res.json();
     if (data.ok) { await loadConversations(); await loadHistory(); showToast('Logged in as admin','success'); } else { showToast(data.error || 'Login failed','error'); }
   });
-
   logoutBtn.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await loadConversations(); await loadHistory(); showToast('Logged out','success'); });
 
-  mobileMenuBtn.addEventListener('click', () => {
-    const aside = document.querySelector('aside');
-    const backdrop = document.getElementById('drawerBackdrop');
-    const willShow = aside.classList.contains('hidden');
-    aside.classList.toggle('hidden');
-    backdrop?.classList.toggle('hidden');
-    document.body.classList.toggle('drawer-open', willShow);
-  });
-  document.getElementById('drawerBackdrop')?.addEventListener('click', () => {
-    const aside = document.querySelector('aside');
-    const backdrop = document.getElementById('drawerBackdrop');
-    aside.classList.add('hidden');
-    backdrop?.classList.add('hidden');
-    document.body.classList.remove('drawer-open');
-  });
-  themeToggle.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
-  if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); }
   if (convSearch) convSearch.addEventListener('input', renderConversations);
-  if (scrollBottomBtn) scrollBottomBtn.addEventListener('click', () => { chat.scrollTop = chat.scrollHeight; updateScrollBtn(); });
-  if (chat) chat.addEventListener('scroll', updateScrollBtn);
 
-  Promise.all([loadConversations(), loadHistory()]).then(() => {
-    if (window.lucide) { window.lucide.createIcons(); }
-  });
+  Promise.all([loadConversations(), loadHistory()]);
   </script>
 </body>
 </html>
