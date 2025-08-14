@@ -443,6 +443,16 @@ HTML_INDEX = """
           boxShadow: {
             raised: '0 8px 24px -10px rgba(0,0,0,.6)',
             luxe: '0 12px 40px -12px rgba(0,0,0,.65)'
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+            slideUp: { '0%': { transform: 'translateY(6px)', opacity: 0 }, '100%': { transform: 'translateY(0)', opacity: 1 } },
+            slideInLeft: { '0%': { transform: 'translateX(-8px)', opacity: 0 }, '100%': { transform: 'translateX(0)', opacity: 1 } }
+          },
+          animation: {
+            'fade-in': 'fadeIn 180ms ease-out',
+            'slide-up': 'slideUp 200ms cubic-bezier(.2,.8,.2,1)',
+            'slide-in-left': 'slideInLeft 220ms cubic-bezier(.2,.8,.2,1)'
           }
         }
       }
@@ -456,6 +466,15 @@ HTML_INDEX = """
       radial-gradient(80rem 40rem at 20% -10%, rgba(80,80,120,.16), transparent 45%),
       radial-gradient(60rem 30rem at 110% 10%, rgba(60,90,60,.14), transparent 40%),
       linear-gradient(#0b0b10, #09090c);
+      position: relative;
+      overflow: hidden;
+    }
+    body::before { /* subtle noise overlay */
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 3px 3px;
+      opacity: .5;
     }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
     .msg { max-width: 72ch; }
@@ -465,54 +484,72 @@ HTML_INDEX = """
     pre { position: relative; }
     pre code { white-space: pre-wrap; word-break: break-word; }
     .copy-btn { position: absolute; top: .5rem; right: .5rem; }
+    .gradient-border { position: relative; }
+    .gradient-border::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, rgba(62,206,153,.8), rgba(88,88,120,.7), rgba(62,206,153,.8)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body class="font-sans bg-ink text-zinc-100">
-  <div class="min-h-[100svh] flex flex-col">
-    <header class="p-4 flex justify-center">
-      <div class="px-4 py-2 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow backdrop-blur">
-        ✨ AIChatPal Premier
-      </div>
-    </header>
-
-    <main class="flex-1">
-      <div class="max-w-3xl mx-auto w-full px-3">
-        <div id="chat" class="pt-2 pb-28" role="log" aria-live="polite" aria-relevant="additions"></div>
-      </div>
-    </main>
-
-    <div class="fixed inset-x-0 bottom-0 z-40 safe-bottom bg-gradient-to-t from-ink to-ink/95 border-t border-zinc-900/70">
-      <form id="composer" class="max-w-3xl mx-auto px-3 py-3">
-        <div class="flex items-end gap-2">
-          <div class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors relative backdrop-blur">
-            <div id="attachmentPreview" class="px-3 pt-3 pb-0 hidden flex-wrap gap-2"></div>
-            <div class="flex items-center">
-              <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Attach">＋</button>
-              <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
-            </div>
-            <div id="attachMenu" class="hidden absolute bottom-[54px] left-2 w-56 rounded-xl border border-zinc-800 bg-zinc-950/90 shadow-luxe backdrop-blur p-1">
-              <button type="button" id="actionAddPhotos" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200"><span>🖼️</span><span>Add photos</span></button>
-              <button type="button" id="actionTakePhoto" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200"><span>📷</span><span>Take photo</span></button>
-              <button type="button" id="actionAddFiles" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200"><span>📎</span><span>Add files</span></button>
-              <input id="photosInput" type="file" accept="image/*" multiple class="hidden" />
-              <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
-              <input id="filesInput" type="file" multiple class="hidden" />
-            </div>
-          </div>
-          <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M6 15l6-6 6 6"/></svg>
-          </button>
+  <div class="min-h-[100svh] relative z-10 flex">
+    <aside id="sidebar" class="hidden md:flex fixed md:static left-0 top-0 bottom-0 w-72 bg-zinc-950/70 border-r border-zinc-900 backdrop-blur z-40 transform md:transform-none -translate-x-full md:translate-x-0 transition-transform">
+      <div class="flex flex-col h-full w-full">
+        <div class="h-14 px-3 flex items-center justify-between border-b border-zinc-900/70">
+          <div class="text-sm text-zinc-300">Conversations</div>
+          <button id="newChatBtn" class="px-2.5 py-1 rounded-lg text-xs bg-emerald-600/90 hover:bg-emerald-600 text-white shadow">New</button>
         </div>
-        <div class="mt-2 text-[12px] text-zinc-500" id="limit"></div>
-      </form>
+        <div id="convoList" class="flex-1 overflow-auto p-2 space-y-1"></div>
+        <div class="p-2 text-[11px] text-zinc-500 border-t border-zinc-900/70">AIChatPal Premier</div>
+      </div>
+    </aside>
+
+    <div class="flex-1 min-w-0 flex flex-col">
+      <header class="sticky top-0 z-30 h-14 px-3 flex items-center justify-between bg-gradient-to-b from-ink/90 to-transparent border-b border-zinc-900/50 backdrop-blur">
+        <div class="flex items-center gap-2">
+          <button id="sidebarToggle" class="md:hidden px-2 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/50 text-zinc-300">☰</button>
+          <div class="px-3 py-1.5 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow backdrop-blur">✨ AIChatPal Premier</div>
+        </div>
+        <div class="text-xs text-zinc-500">Fast, polished AI chat</div>
+      </header>
+
+      <main class="flex-1">
+        <div class="max-w-3xl mx-auto w-full px-3">
+          <div id="chat" class="pt-4 pb-28 space-y-3" role="log" aria-live="polite" aria-relevant="additions"></div>
+        </div>
+      </main>
+
+      <div class="fixed inset-x-0 bottom-0 z-40 safe-bottom bg-gradient-to-t from-ink to-ink/95 border-t border-zinc-900/70">
+        <form id="composer" class="max-w-3xl mx-auto px-3 py-3">
+          <div class="flex items-end gap-2">
+            <div id="composerBox" class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors relative backdrop-blur gradient-border">
+              <div id="attachmentPreview" class="px-3 pt-3 pb-0 hidden flex-wrap gap-2"></div>
+              <div class="flex items-center">
+                <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200 transition-colors" title="Attach">＋</button>
+                <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
+              </div>
+              <div id="attachMenu" class="hidden absolute bottom-[54px] left-2 w-56 rounded-xl border border-zinc-800 bg-zinc-950/90 shadow-luxe backdrop-blur p-1 animate-slide-up">
+                <button type="button" id="actionAddPhotos" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>🖼️</span><span>Add photos</span></button>
+                <button type="button" id="actionTakePhoto" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>📷</span><span>Take photo</span></button>
+                <button type="button" id="actionAddFiles" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>📎</span><span>Add files</span></button>
+                <input id="photosInput" type="file" accept="image/*" multiple class="hidden" />
+                <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
+                <input id="filesInput" type="file" multiple class="hidden" />
+              </div>
+            </div>
+            <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M6 15l6-6 6 6"/></svg>
+            </button>
+          </div>
+          <div class="mt-2 text-[12px] text-zinc-500" id="limit"></div>
+        </form>
+      </div>
     </div>
   </div>
 
   <div id="toasts" class="fixed bottom-[96px] left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
   <script>
   const chat = document.getElementById('chat');
   const input = document.getElementById('input');
@@ -524,17 +561,24 @@ HTML_INDEX = """
   const cameraInput = document.getElementById('cameraInput');
   const filesInput = document.getElementById('filesInput');
   const attachmentPreview = document.getElementById('attachmentPreview');
+  const composerBox = document.getElementById('composerBox');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const convoList = document.getElementById('convoList');
+  const newChatBtn = document.getElementById('newChatBtn');
 
   const MAX_ATTACHMENTS = 5;
   const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB per file
   const MAX_TOTAL_SIZE = 12 * 1024 * 1024; // 12MB per message
   let pendingAttachments = [];
+  let readingCount = 0;
+  let currentCid = null;
 
   function showToast(message, variant = 'default', timeout = 2200) {
     const host = document.getElementById('toasts');
     const node = document.createElement('div');
     const colors = variant === 'success' ? 'from-emerald-600 to-green-600' : variant === 'error' ? 'from-rose-600 to-pink-600' : 'from-zinc-700 to-zinc-900';
-    node.className = `text-sm text-white px-4 py-2 rounded-xl shadow-raised bg-gradient-to-r ${colors}`;
+    node.className = `text-sm text-white px-4 py-2 rounded-xl shadow-raised bg-gradient-to-r ${colors} animate-slide-up`;
     node.textContent = message;
     host.appendChild(node);
     setTimeout(() => { node.style.opacity = '0'; node.style.transform = 'translateY(6px)'; setTimeout(() => node.remove(), 180); }, timeout);
@@ -567,17 +611,45 @@ HTML_INDEX = """
     wrapper.innerHTML = clean;
     wrapper.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
     wrapper.querySelectorAll('pre').forEach(p => p.classList.add('not-prose','rounded-lg','border','border-zinc-800'));
-    Prism.highlightAllUnder(wrapper);
+    if (window.Prism && window.Prism.highlightAllUnder) { window.Prism.highlightAllUnder(wrapper); }
     return wrapper.innerHTML;
   }
 
-  function bubble(role, content){
+  function renderAttachmentTiles(attachments){
+    if (!attachments || !attachments.length) return null;
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-3 gap-2 mb-2 animate-fade-in';
+    attachments.forEach(a => {
+      if (a.kind === 'image'){
+        const img = document.createElement('img');
+        img.src = a.base64; img.alt = a.name; img.loading = 'lazy';
+        img.className = 'w-full h-24 object-cover rounded-lg border border-zinc-800';
+        grid.appendChild(img);
+      } else {
+        const card = document.createElement('div');
+        card.className = 'rounded-lg border border-zinc-800 bg-zinc-900/60 p-2 text-xs text-zinc-300 flex items-center gap-2';
+        const icon = document.createElement('div'); icon.textContent = '📎';
+        const label = document.createElement('div'); label.className = 'truncate'; label.textContent = a.name || 'file';
+        card.appendChild(icon); card.appendChild(label);
+        grid.appendChild(card);
+      }
+    });
+    return grid;
+  }
+
+  function bubble(role, content, attachments){
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
     const isUser = role === 'user';
     const bubble = document.createElement('div');
     bubble.className = 'msg rounded-2xl px-4 py-3 ' + (isUser ? 'bg-emerald-600 text-white shadow-raised' : 'bg-zinc-900/70 border border-zinc-800 backdrop-blur');
-    bubble.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+    const inner = document.createElement('div');
+    if (isUser && attachments && attachments.length){
+      const tiles = renderAttachmentTiles(attachments);
+      if (tiles) inner.appendChild(tiles);
+    }
+    inner.innerHTML += isUser ? `<div class=\"tracking-tight\">${(content || '').replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+    bubble.appendChild(inner);
     row.appendChild(bubble);
     chat.appendChild(row);
     if (!isUser) attachCopyHandlers(bubble);
@@ -624,6 +696,96 @@ HTML_INDEX = """
     attachCopyHandlers();
   }
 
+  async function loadConversations(){
+    try {
+      const res = await fetch('/api/conversations');
+      const data = await res.json();
+      const list = data.conversations || [];
+      currentCid = data.current || currentCid;
+      convoList.innerHTML = '';
+      list.forEach(it => {
+        const item = document.createElement('div');
+        const active = it.id === currentCid;
+        item.className = 'group rounded-lg px-2 py-2 flex items-center justify-between gap-2 cursor-pointer ' + (active ? 'bg-zinc-900/70 border border-zinc-800' : 'hover:bg-zinc-900/40');
+        const left = document.createElement('div');
+        left.className = 'min-w-0';
+        const title = document.createElement('div');
+        title.className = 'truncate text-sm ' + (active ? 'text-zinc-100' : 'text-zinc-200');
+        title.textContent = it.title || 'New chat';
+        const ts = document.createElement('div');
+        ts.className = 'text-[10px] text-zinc-500';
+        try { ts.textContent = new Date(it.updated_at).toLocaleString(); } catch(e) { ts.textContent = ''; }
+        left.appendChild(title); left.appendChild(ts);
+        const actions = document.createElement('div');
+        actions.className = 'flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity';
+        const renameBtn = document.createElement('button'); renameBtn.type = 'button'; renameBtn.title = 'Rename'; renameBtn.className = 'px-1.5 py-1 text-zinc-400 hover:text-zinc-100'; renameBtn.textContent = '✎';
+        const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.title = 'Delete'; delBtn.className = 'px-1.5 py-1 text-zinc-400 hover:text-rose-400'; delBtn.textContent = '🗑️';
+        actions.appendChild(renameBtn); actions.appendChild(delBtn);
+        item.appendChild(left); item.appendChild(actions);
+        item.addEventListener('click', async (e) => {
+          if (e.target === renameBtn || e.target === delBtn) return;
+          if (it.id === currentCid) return;
+          await selectConversation(it.id);
+        });
+        renameBtn.addEventListener('click', (e) => { e.stopPropagation(); startInlineRename(item, it); });
+        delBtn.addEventListener('click', async (e) => { e.stopPropagation(); await deleteConversation(it.id); });
+        convoList.appendChild(item);
+      });
+    } catch(e){ /* ignore */ }
+  }
+
+  async function selectConversation(id){
+    try{
+      await fetch('/api/select_conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+      currentCid = id; await loadConversations(); await loadHistory();
+      // Close sidebar on mobile
+      sidebar.classList.add('-translate-x-full');
+    }catch(e){ showToast('Failed to switch chat','error'); }
+  }
+
+  async function createNewChat(){
+    try{
+      const res = await fetch('/api/conversations', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (data && data.id){ currentCid = data.id; await loadConversations(); await loadHistory(); }
+    }catch(e){ showToast('Failed to create chat','error'); }
+  }
+
+  function startInlineRename(item, it){
+    const left = item.firstChild; // min-w-0 wrapper
+    const actions = item.lastChild;
+    const prev = left.firstChild; // title div
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = it.title || 'New chat';
+    input.className = 'w-full bg-zinc-900/60 border border-zinc-800 rounded px-2 py-1 text-sm text-zinc-100';
+    left.replaceChild(input, prev);
+    input.focus(); input.select();
+    function finish(ok){
+      const newTitle = input.value.trim();
+      if (ok && newTitle && newTitle !== it.title){ renameConversation(it.id, newTitle); }
+      // Restore
+      const title = document.createElement('div'); title.className = 'truncate text-sm ' + (it.id === currentCid ? 'text-zinc-100':'text-zinc-200'); title.textContent = it.title = newTitle || it.title || 'New chat';
+      left.replaceChild(title, input);
+    }
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ finish(true); } else if (e.key === 'Escape'){ finish(false); }});
+    input.addEventListener('blur', () => finish(true));
+  }
+
+  async function renameConversation(id, title){
+    try{ await fetch(`/api/conversations/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title }) }); await loadConversations(); }
+    catch(e){ showToast('Rename failed','error'); }
+  }
+
+  async function deleteConversation(id){
+    if (!confirm('Delete this conversation?')) return;
+    try{
+      const res = await fetch(`/api/conversations/${id}`, { method:'DELETE' });
+      const data = await res.json();
+      currentCid = data.current || currentCid;
+      await loadConversations(); await loadHistory();
+    }catch(e){ showToast('Delete failed','error'); }
+  }
+
   function bytesToSize(bytes){
     const units = ['B','KB','MB','GB'];
     let i = 0; let num = bytes;
@@ -637,13 +799,18 @@ HTML_INDEX = """
     const frag = document.createDocumentFragment();
     pendingAttachments.forEach((a, idx) => {
       const chip = document.createElement('div');
-      chip.className = 'inline-flex items-center gap-2 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-900/70 text-xs text-zinc-200';
+      chip.className = 'inline-flex items-center gap-2 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-900/70 text-xs text-zinc-200 animate-fade-in';
       if (a.kind === 'image'){
-        const img = document.createElement('img'); img.src = a.base64; img.alt = a.name; img.className = 'h-7 w-7 rounded object-cover'; chip.appendChild(img);
+        const img = document.createElement('img'); img.src = a.base64 || ''; img.alt = a.name; img.className = 'h-7 w-7 rounded object-cover'; chip.appendChild(img);
       } else {
         const span = document.createElement('span'); span.textContent = '📎'; chip.appendChild(span);
       }
-      const label = document.createElement('span'); label.textContent = `${a.name} • ${bytesToSize(a.size)}`; chip.appendChild(label);
+      const label = document.createElement('span'); label.className = 'truncate max-w-[10rem]'; label.textContent = `${a.name} • ${bytesToSize(a.size)}`; chip.appendChild(label);
+      if (a.progress !== undefined && a.progress < 100){
+        const bar = document.createElement('div'); bar.className = 'h-1 w-full bg-zinc-800 rounded';
+        const fill = document.createElement('div'); fill.className = 'h-1 bg-emerald-500 rounded'; fill.style.width = `${a.progress}%`;
+        const wrap = document.createElement('div'); wrap.className = 'w-24'; wrap.appendChild(bar); bar.appendChild(fill); chip.appendChild(wrap);
+      }
       const x = document.createElement('button'); x.type = 'button'; x.className = 'ml-1 text-zinc-400 hover:text-zinc-200'; x.textContent = '✕';
       x.addEventListener('click', () => { pendingAttachments.splice(idx,1); renderAttachmentPreview(); });
       chip.appendChild(x);
@@ -651,6 +818,17 @@ HTML_INDEX = """
     });
     attachmentPreview.innerHTML = '';
     attachmentPreview.appendChild(frag);
+  }
+
+  function readFileWithProgress(file, onDone){
+    const reader = new FileReader();
+    readingCount++;
+    const att = { name: file.name, mime: file.type || 'application/octet-stream', size: file.size, base64: '', kind: (file.type || '').startsWith('image/') ? 'image' : 'file', progress: 0 };
+    pendingAttachments.push(att);
+    reader.onprogress = (e) => { if (e.lengthComputable){ att.progress = Math.round((e.loaded / e.total) * 100); renderAttachmentPreview(); } };
+    reader.onload = () => { att.base64 = String(reader.result || ''); att.progress = 100; renderAttachmentPreview(); if (onDone) onDone(); readingCount--; };
+    reader.onerror = () => { showToast('File read failed','error'); const i = pendingAttachments.indexOf(att); if (i>=0) pendingAttachments.splice(i,1); renderAttachmentPreview(); readingCount--; };
+    reader.readAsDataURL(file);
   }
 
   function addFiles(files){
@@ -662,14 +840,7 @@ HTML_INDEX = """
     if (newTotal > MAX_TOTAL_SIZE){ showToast('Attachments too large','error'); return; }
     arr.forEach(file => {
       if (file.size > MAX_FILE_SIZE){ showToast(`${file.name} is too large`,'error'); return; }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = String(reader.result || '');
-        const kind = (file.type || '').startsWith('image/') ? 'image' : 'file';
-        pendingAttachments.push({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, base64, kind });
-        renderAttachmentPreview();
-      };
-      reader.readAsDataURL(file);
+      readFileWithProgress(file);
     });
   }
 
@@ -680,10 +851,12 @@ HTML_INDEX = """
 
   async function sendMessage(){
     const text = input.value.trim();
+    if (readingCount > 0){ showToast('Still processing files…','error'); return; }
     if (!text && !pendingAttachments.length) return;
+    const attachmentsForBubble = pendingAttachments.map(a => ({ kind: a.kind, base64: a.base64, name: a.name, size: a.size }));
     input.value = '';
     autoResizeTextarea(input);
-    bubble('user', text || (pendingAttachments.length ? '(Sent attachments)' : ''));
+    bubble('user', text || (pendingAttachments.length ? '(Sent attachments)' : ''), attachmentsForBubble);
     const payloadAttachments = pendingAttachments.map(a => ({ name: a.name, mime: a.mime, size: a.size, data: (a.base64.split(',')[1] || '') }));
     pendingAttachments = []; renderAttachmentPreview(); toggleAttachMenu(false);
     sendBtn.disabled = true;
@@ -707,13 +880,22 @@ HTML_INDEX = """
 
   document.getElementById('composer').addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
   sendBtn.addEventListener('click', sendMessage);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
+  input.addEventListener('keydown', (e) => { if ((e.key === 'Enter' && !e.shiftKey) || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))){ e.preventDefault(); sendMessage(); }});
   input.addEventListener('input', () => autoResizeTextarea(input));
   input.addEventListener('focus', () => { setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50); });
+
+  // Drag & drop attachments
+  ;['dragenter','dragover'].forEach(eventName => composerBox.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); composerBox.classList.add('ring-2','ring-emerald-600'); }));
+  ;['dragleave','drop'].forEach(eventName => composerBox.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); composerBox.classList.remove('ring-2','ring-emerald-600'); }));
+  composerBox.addEventListener('drop', (e) => { const dt = e.dataTransfer; if (dt && dt.files) addFiles(dt.files); });
+
+  // Sidebar toggle
+  sidebarToggle?.addEventListener('click', () => { const isHidden = sidebar.classList.contains('-translate-x-full'); sidebar.classList.toggle('-translate-x-full', !isHidden); sidebar.classList.remove('hidden'); });
 
   // Attachments menu and actions
   attachBtn?.addEventListener('click', (e) => { e.stopPropagation(); toggleAttachMenu(); });
   document.addEventListener('click', (e) => { if (!attachMenu.contains(e.target) && e.target !== attachBtn) toggleAttachMenu(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape'){ toggleAttachMenu(false); }});
   document.getElementById('actionAddPhotos')?.addEventListener('click', () => photosInput.click());
   document.getElementById('actionTakePhoto')?.addEventListener('click', () => cameraInput.click());
   document.getElementById('actionAddFiles')?.addEventListener('click', () => filesInput.click());
@@ -721,6 +903,9 @@ HTML_INDEX = """
   cameraInput.addEventListener('change', (e) => { addFiles(e.target.files); cameraInput.value = ''; toggleAttachMenu(false); });
   filesInput.addEventListener('change', (e) => { addFiles(e.target.files); filesInput.value = ''; toggleAttachMenu(false); });
 
+  newChatBtn?.addEventListener('click', createNewChat);
+
+  loadConversations();
   loadHistory();
   </script>
 </body>
