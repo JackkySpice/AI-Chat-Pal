@@ -435,13 +435,20 @@ HTML_INDEX = """
     pre { position: relative; }
     pre code { white-space: pre-wrap; word-break: break-word; }
     .copy-btn { position: absolute; top: .5rem; right: .5rem; }
+
+    /* Attach menu + attachment preview */
+    .attach-menu-enter { animation: amenu .12s ease-out; transform-origin: 16px bottom; }
+    @keyframes amenu { 0%{ opacity: 0; transform: translateY(4px) scale(.98); } 100%{ opacity: 1; transform: translateY(0) scale(1); } }
+    .att-chip { display: inline-flex; align-items: center; gap: .5rem; padding: .375rem .5rem; background: rgba(24,24,27,.7); border: 1px solid rgba(63,63,70,.8); border-radius: .75rem; }
+    .att-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: .75rem; border: 1px solid rgba(63,63,70,.8); }
+    .att-remove { opacity: .7; }
   </style>
 </head>
 <body class="font-sans bg-ink text-zinc-100">
   <div class="min-h-[100svh] flex flex-col">
     <header class="p-4 flex justify-center">
-      <button class="px-4 py-1.5 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow">
-        ✨ Upgrade to Plus
+      <button class="px-4 py-1.5 rounded-full text-sm bg-[#221c2f] border border-[#2e2345] text-[#e6ddff] shadow hover:brightness-110">
+        ✦ Upgrade to Plus
       </button>
     </header>
 
@@ -454,17 +461,41 @@ HTML_INDEX = """
     <div class="fixed inset-x-0 bottom-0 z-40 safe-bottom bg-gradient-to-t from-ink to-ink/95 border-t border-zinc-900/70">
       <form id="composer" class="max-w-3xl mx-auto px-3 py-3">
         <div class="flex items-end gap-2">
-          <div class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors">
+          <div class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors relative">
             <div class="flex items-center">
               <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Attach">＋</button>
               <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
               <button type="button" id="micBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Voice">🎤</button>
+            </div>
+            <!-- Attach Menu -->
+            <div id="attachMenu" class="absolute left-2 bottom-14 w-56 rounded-2xl border border-zinc-800/70 bg-zinc-950/95 backdrop-blur-xl p-1 shadow-raised hidden attach-menu-enter">
+              <button type="button" id="actionAddPhotos" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-800/40">
+                <span class="text-lg">🖼️</span>
+                <span class="text-sm">Add photos</span>
+              </button>
+              <button type="button" id="actionTakePhoto" class="mt-1 w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-800/40">
+                <span class="text-lg">📷</span>
+                <span class="text-sm">Take photo</span>
+              </button>
+              <button type="button" id="actionAddFiles" class="mt-1 w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-800/40">
+                <span class="text-lg">📎</span>
+                <span class="text-sm">Add files</span>
+              </button>
             </div>
           </div>
           <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M6 15l6-6 6 6"/></svg>
           </button>
         </div>
+
+        <!-- Attachment preview row -->
+        <div id="attachmentsRow" class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 hidden"></div>
+
+        <!-- Hidden file inputs -->
+        <input type="file" id="inputAddPhotos" accept="image/*" multiple class="hidden" />
+        <input type="file" id="inputTakePhoto" accept="image/*" capture="environment" class="hidden" />
+        <input type="file" id="inputAddFiles" multiple class="hidden" />
+
         <div class="mt-2 text-[12px] text-zinc-500" id="limit"></div>
       </form>
     </div>
@@ -480,6 +511,17 @@ HTML_INDEX = """
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
   const limitP = document.getElementById('limit');
+  const attachBtn = document.getElementById('attachBtn');
+  const attachMenu = document.getElementById('attachMenu');
+  const attachmentsRow = document.getElementById('attachmentsRow');
+  const inputAddPhotos = document.getElementById('inputAddPhotos');
+  const inputTakePhoto = document.getElementById('inputTakePhoto');
+  const inputAddFiles = document.getElementById('inputAddFiles');
+  const actionAddPhotos = document.getElementById('actionAddPhotos');
+  const actionTakePhoto = document.getElementById('actionTakePhoto');
+  const actionAddFiles = document.getElementById('actionAddFiles');
+
+  let attachments = [];
 
   function showToast(message, variant = 'default', timeout = 2200) {
     const host = document.getElementById('toasts');
@@ -526,14 +568,14 @@ HTML_INDEX = """
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
     const isUser = role === 'user';
-    const bubble = document.createElement('div');
-    bubble.className = 'msg rounded-2xl px-4 py-3 ' + (isUser ? 'bg-emerald-600 text-white shadow-raised' : 'bg-zinc-900/70 border border-zinc-800');
-    bubble.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
-    row.appendChild(bubble);
+    const bubbleEl = document.createElement('div');
+    bubbleEl.className = 'msg rounded-2xl px-4 py-3 ' + (isUser ? 'bg-emerald-600 text-white shadow-raised' : 'bg-zinc-900/70 border border-zinc-800');
+    bubbleEl.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+    row.appendChild(bubbleEl);
     chat.appendChild(row);
-    if (!isUser) attachCopyHandlers(bubble);
+    if (!isUser) attachCopyHandlers(bubbleEl);
     chat.scrollTop = chat.scrollHeight;
-    return { row, bubble };
+    return { row, bubble: bubbleEl };
   }
 
   function createThinkingBubble(){
@@ -548,7 +590,7 @@ HTML_INDEX = """
     return row;
   }
 
-  // Always dark by default; preserved for potential future toggle
+  // Always dark by default
   function setTheme(on){ document.documentElement.classList.toggle('dark', on); try { localStorage.setItem('theme', on ? 'dark' : 'light'); } catch(e){} }
   if (localStorage.getItem('theme') !== 'light'){ setTheme(true); }
 
@@ -575,19 +617,99 @@ HTML_INDEX = """
     attachCopyHandlers();
   }
 
+  function toggleAttachMenu(show){
+    const shouldShow = typeof show === 'boolean' ? show : attachMenu.classList.contains('hidden');
+    if (shouldShow){ attachMenu.classList.remove('hidden'); }
+    else { attachMenu.classList.add('hidden'); }
+  }
+
+  function addFilesFromList(fileList, kind){
+    const files = Array.from(fileList || []);
+    files.forEach(file => {
+      const url = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
+      attachments.push({ file, url, kind: kind || (file.type.startsWith('image/') ? 'photo' : 'file') });
+    });
+    updateAttachmentPreview();
+  }
+
+  function updateAttachmentPreview(){
+    attachmentsRow.innerHTML = '';
+    if (!attachments.length){ attachmentsRow.classList.add('hidden'); return; }
+    attachmentsRow.classList.remove('hidden');
+
+    attachments.forEach((att, idx) => {
+      if (att.file.type.startsWith('image/')){
+        const wrap = document.createElement('div');
+        wrap.className = 'relative';
+        const img = document.createElement('img');
+        img.src = att.url; img.alt = att.file.name; img.className = 'att-thumb';
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'att-remove absolute -top-2 -right-2 w-6 h-6 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white';
+        rm.innerHTML = '×';
+        rm.addEventListener('click', () => { removeAttachment(idx); });
+        wrap.appendChild(img); wrap.appendChild(rm); attachmentsRow.appendChild(wrap);
+      } else {
+        const chip = document.createElement('div');
+        chip.className = 'att-chip';
+        chip.innerHTML = `<span class=\"text-sm\">📎 ${att.file.name}</span>`;
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'ml-1 text-zinc-300 hover:text-white';
+        rm.textContent = '×';
+        rm.addEventListener('click', () => { removeAttachment(idx); });
+        chip.appendChild(rm);
+        attachmentsRow.appendChild(chip);
+      }
+    });
+  }
+
+  function removeAttachment(index){
+    const [removed] = attachments.splice(index, 1);
+    try { if (removed && removed.url) URL.revokeObjectURL(removed.url); } catch(e){}
+    updateAttachmentPreview();
+  }
+
+  function clearAttachments(){
+    attachments.forEach(a => { try { if (a.url) URL.revokeObjectURL(a.url); } catch(e){} });
+    attachments = [];
+    updateAttachmentPreview();
+  }
+
+  function renderAttachmentsInBubble(bubbleEl, list){
+    if (!list || !list.length) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'mt-2 space-y-2';
+    const images = list.filter(a => a.file.type.startsWith('image/'));
+    const files = list.filter(a => !a.file.type.startsWith('image/'));
+    if (images.length){
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-3 gap-2';
+      images.forEach(a => { const img = document.createElement('img'); img.src = a.url; img.alt = a.file.name; img.className = 'w-full h-24 object-cover rounded-xl border border-emerald-700/30'; grid.appendChild(img); });
+      wrap.appendChild(grid);
+    }
+    if (files.length){
+      const row = document.createElement('div');
+      row.className = 'flex flex-wrap gap-2';
+      files.forEach(a => { const chip = document.createElement('div'); chip.className = 'att-chip bg-emerald-700/20 border-emerald-700/40'; chip.innerHTML = `📎 <span class=\"text-sm\">${a.file.name}</span>`; row.appendChild(chip); });
+      wrap.appendChild(row);
+    }
+    bubbleEl.appendChild(wrap);
+  }
+
   async function sendMessage(){
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && attachments.length === 0) return;
     input.value = '';
     autoResizeTextarea(input);
-    bubble('user', text);
+    const userMsg = bubble('user', text || (attachments.length ? '(attachments)' : ''));
+    if (attachments.length) { renderAttachmentsInBubble(userMsg.bubble, attachments); }
+    const summary = attachments.length ? ("\n\n[Attached: " + attachments.map(a => a.file.name).join(', ') + "]") : '';
     sendBtn.disabled = true;
     const prev = sendBtn.innerHTML;
     sendBtn.innerHTML = '<span class="opacity-80">…</span>';
     const thinkingRow = createThinkingBubble();
     chat.scrollTop = chat.scrollHeight;
     try{
-      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text}) });
+      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: (text || '').trim() + summary}) });
       const data = await res.json();
       thinkingRow.remove();
       if (data.error){ bubble('assistant', `Error: ${data.error}`); showToast(data.error, 'error'); }
@@ -598,6 +720,7 @@ HTML_INDEX = """
       }
     }catch(e){ thinkingRow.remove(); bubble('assistant', 'Network error.'); showToast('Network error','error'); }
     finally { sendBtn.disabled = false; sendBtn.innerHTML = prev || 'Send'; }
+    clearAttachments();
   }
 
   document.getElementById('composer').addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
@@ -606,8 +729,21 @@ HTML_INDEX = """
   input.addEventListener('input', () => autoResizeTextarea(input));
   input.addEventListener('focus', () => { setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50); });
 
-  // Non-functional helpers for now
-  document.getElementById('attachBtn')?.addEventListener('click', () => showToast('Attachments not implemented'));
+  // Attachment handlers
+  attachBtn?.addEventListener('click', (e) => { e.stopPropagation(); toggleAttachMenu(); });
+  document.addEventListener('click', (e) => {
+    if (!attachMenu) return;
+    if (!attachMenu.contains(e.target) && e.target !== attachBtn){ attachMenu.classList.add('hidden'); }
+  });
+  actionAddPhotos?.addEventListener('click', () => { inputAddPhotos?.click(); attachMenu.classList.add('hidden'); });
+  actionTakePhoto?.addEventListener('click', () => { inputTakePhoto?.click(); attachMenu.classList.add('hidden'); });
+  actionAddFiles?.addEventListener('click', () => { inputAddFiles?.click(); attachMenu.classList.add('hidden'); });
+
+  inputAddPhotos?.addEventListener('change', (e) => { addFilesFromList(e.target.files, 'photo'); e.target.value = ''; });
+  inputTakePhoto?.addEventListener('change', (e) => { addFilesFromList(e.target.files, 'photo'); e.target.value = ''; });
+  inputAddFiles?.addEventListener('change', (e) => { addFilesFromList(e.target.files, 'file'); e.target.value = ''; });
+
+  // Non-functional mic helper for now
   document.getElementById('micBtn')?.addEventListener('click', () => showToast('Voice not implemented'));
 
   loadHistory();
