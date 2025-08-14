@@ -398,11 +398,14 @@ HTML_INDEX = """
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content, maximum-scale=1">
   <title>AIChatPal · Mobile</title>
   <meta name="description" content="AIChatPal — Clean, fast, mobile-first AI chat powered by Gemini.">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="HandheldFriendly" content="true">
+  <meta name="google" content="notranslate">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -429,15 +432,23 @@ HTML_INDEX = """
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
   <style>
-    :root { color-scheme: light dark; }
+    :root { color-scheme: light dark; -webkit-text-size-adjust: 100%; }
     * { -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
+    body { overscroll-behavior-y: contain; }
     .glass { backdrop-filter: saturate(140%) blur(10px); background: rgba(255,255,255,0.55); }
     .dark .glass { background: rgba(17,24,39,0.55); }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
     .composer-safe-bottom { bottom: calc(env(safe-area-inset-bottom) + 0px); }
     .scroll-smooth { scroll-behavior: smooth; }
     .msg { max-width: 72ch; }
+    .skeleton { position: relative; overflow: hidden; }
+    .skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.08) 40%, rgba(255,255,255,.18) 60%, transparent 100%); animation: shimmer 1.1s linear infinite; }
+    @keyframes shimmer { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }
+    .dark .skeleton::after { background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.06) 40%, rgba(255,255,255,.12) 60%, transparent 100%); }
+    pre { position: relative; }
+    pre code { white-space: pre-wrap; word-break: break-word; }
+    .copy-btn { position: absolute; top: .5rem; right: .5rem; }
     @media (prefers-reduced-motion: reduce) {
       * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
       .glass { backdrop-filter: none; }
@@ -460,32 +471,39 @@ HTML_INDEX = """
         </div>
         <div class="flex items-center gap-2">
           <button id="newChatTop" class="hidden md:inline-flex px-3 py-2 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-elevated hover:brightness-110">New chat</button>
-          <button id="toggleTheme" class="px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Toggle theme">🌙</button>
+          <button id="toggleTheme" class="px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Toggle theme"><span id="themeIcon">🌙</span></button>
         </div>
       </div>
     </header>
 
     <main class="flex-1 relative">
-      <div id="chat" class="scroll-smooth overflow-y-auto px-3 pt-3 pb-28 md:pb-4 max-w-3xl mx-auto w-full"></div>
+      <div id="chat" class="scroll-smooth overflow-y-auto px-3 pt-3 pb-28 md:pb-4 max-w-3xl mx-auto w-full" role="log" aria-live="polite" aria-relevant="additions"></div>
 
-      <button id="scrollBottom" class="hidden fixed right-4 bottom-28 md:bottom-24 z-30 h-10 w-10 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated">↓</button>
+      <button id="scrollBottom" class="hidden fixed right-4 bottom-28 md:bottom-24 z-30 h-10 w-10 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated" aria-label="Scroll to bottom">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 m-auto"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
 
-      <button id="fabNewChat" class="md:hidden fixed right-4 bottom-[92px] z-30 h-12 w-12 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated">+</button>
+      <button id="fabNewChat" class="md:hidden fixed right-4 bottom-[92px] z-30 h-12 w-12 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated" aria-label="New chat">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 m-auto"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
 
       <div class="fixed inset-x-0 composer-safe-bottom z-40">
         <div class="mx-auto max-w-3xl px-3 pb-3">
-          <div class="rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated p-3">
+          <form id="composer" class="rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated p-3">
             <div class="flex items-end gap-2">
               <div class="flex-1">
-                <textarea id="input" rows="1" placeholder="Type your message" class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400" ></textarea>
+                <textarea id="input" rows="1" placeholder="Type your message" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400" ></textarea>
                 <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
                   <span class="hidden sm:inline">Enter to send, Shift+Enter for new line</span>
                   <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
                 </div>
               </div>
-              <button id="send" class="h-12 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated">Send</button>
+              <button id="send" type="submit" class="h-12 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                <span>Send</span>
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </main>
@@ -538,6 +556,8 @@ HTML_INDEX = """
   const fabNewChat = document.getElementById('fabNewChat');
   const newChatTop = document.getElementById('newChatTop');
   const newChatSheet = document.getElementById('newChatSheet');
+  const composer = document.getElementById('composer');
+  const themeIcon = document.getElementById('themeIcon');
 
   let state = { conversations: [], current: null, is_admin: false };
 
@@ -553,12 +573,31 @@ HTML_INDEX = """
 
   function autoResizeTextarea(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
 
+  function attachCopyHandlers(root = chat){
+    (root.querySelectorAll('pre') || []).forEach(pre => {
+      if (pre.dataset.copyReady) return;
+      pre.dataset.copyReady = '1';
+      pre.style.overflow = 'auto';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-btn px-2 py-1 rounded-md text-xs bg-slate-900/80 text-white dark:bg-white/20 hover:brightness-110';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(pre.innerText.trim()); showToast('Copied','success'); }
+        catch(e){ showToast('Copy failed','error'); }
+      });
+      pre.appendChild(btn);
+    });
+  }
+
   marked.setOptions({ breaks: true, gfm: true });
   function renderMarkdownToHtml(md) {
     const dirty = marked.parse(md || '');
     const clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
     const wrapper = document.createElement('div');
     wrapper.innerHTML = clean;
+    wrapper.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+    wrapper.querySelectorAll('pre').forEach(p => p.classList.add('not-prose','rounded-lg','border','border-slate-200/50','dark:border-slate-700/50'));
     Prism.highlightAllUnder(wrapper);
     return wrapper.innerHTML;
   }
@@ -575,16 +614,29 @@ HTML_INDEX = """
     const isUser = role === 'user';
     bubble.className = 'msg rounded-2xl px-4 py-3 shadow ' + (isUser ? 'text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur');
     bubble.innerHTML = isUser ? `<div class="tracking-tight">${content.replace(/</g,'&lt;')}</div>` : `<div class="prose prose-slate dark:prose-invert max-w-none">${renderMarkdownToHtml(content)}</div>`;
-    if (isUser) { row.appendChild(bubble); }
-    else { row.appendChild(bubble); }
-    row.classList.add('animate-[fadeIn_.2s_ease-out]');
+    row.appendChild(bubble);
     chat.appendChild(row);
+    if (!isUser) attachCopyHandlers(bubble);
+    row.classList.add('animate-[fadeIn_.2s_ease-out]');
     chat.scrollTop = chat.scrollHeight;
     updateScrollBtn();
+    return { row, bubble };
   }
 
-  function setTheme(on){ document.documentElement.classList.toggle('dark', on); localStorage.setItem('theme', on ? 'dark' : 'light'); }
-  if (localStorage.getItem('theme') === 'dark'){ setTheme(true); }
+  function createThinkingBubble(){
+    const row = document.createElement('div');
+    row.className = 'w-full flex items-start gap-3 justify-start';
+    const b = document.createElement('div');
+    b.className = 'msg rounded-2xl px-4 py-3 bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur skeleton';
+    b.innerHTML = '<div class="h-4 w-3/4 mb-2 bg-slate-200/60 dark:bg-slate-700/60 rounded"></div><div class="h-4 w-5/6 bg-slate-200/60 dark:bg-slate-700/60 rounded"></div>';
+    row.appendChild(b);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
+
+  function setTheme(on){ document.documentElement.classList.toggle('dark', on); localStorage.setItem('theme', on ? 'dark' : 'light'); themeIcon.textContent = on ? '☀️' : '🌙'; }
+  if (localStorage.getItem('theme') === 'dark'){ setTheme(true); } else { themeIcon.textContent = '🌙'; }
   toggleTheme.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
 
   function openSheet(){ sheet.classList.remove('hidden'); sheetBackdrop.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
@@ -729,6 +781,7 @@ HTML_INDEX = """
       else { limitP.textContent = `Free messages left today: ${data.left}`; }
     }
     updateScrollBtn();
+    attachCopyHandlers();
   }
 
   async function sendMessage(){
@@ -739,25 +792,24 @@ HTML_INDEX = """
     bubble('user', text);
     sendBtn.disabled = true;
     const prev = sendBtn.innerHTML;
-    sendBtn.textContent = 'Sending…';
-    const thinking = document.createElement('div');
-    thinking.className = 'w-full flex justify-start mt-1 text-slate-500 italic';
-    thinking.textContent = 'Thinking…';
-    chat.appendChild(thinking);
+    sendBtn.innerHTML = '<span class="opacity-80">Sending…</span>';
+    const thinkingRow = createThinkingBubble();
     chat.scrollTop = chat.scrollHeight;
     try{
       const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text}) });
       const data = await res.json();
-      thinking.remove();
+      thinkingRow.remove();
       if (data.error){ bubble('assistant', `Error: ${data.error}`); showToast(data.error, 'error'); }
       else {
         bubble('assistant', data.reply || '(No response)');
+        attachCopyHandlers();
         if (data.left !== undefined){ if (data.left < 0){ limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; } }
       }
-    }catch(e){ thinking.remove(); bubble('assistant', 'Network error.'); showToast('Network error','error'); }
+    }catch(e){ thinkingRow.remove(); bubble('assistant', 'Network error.'); showToast('Network error','error'); }
     finally { sendBtn.disabled = false; sendBtn.innerHTML = prev || 'Send'; }
   }
 
+  composer.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
   sendBtn.addEventListener('click', sendMessage);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
   input.addEventListener('input', () => autoResizeTextarea(input));
