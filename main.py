@@ -271,15 +271,35 @@ def _logout_key(user_id: int) -> bool:
         return False
 
 
-def _build_gemini_contents(conversation_history: List[Dict[str, Any]], latest_user_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
+def _build_gemini_contents(conversation_history: List[Dict[str, Any]], latest_user_prompt: Optional[str] = None, latest_attachments: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     contents: List[Dict[str, Any]] = []
-    for msg in conversation_history[-HISTORY_MAX_MESSAGES:]:
+    window = conversation_history[-HISTORY_MAX_MESSAGES:]
+    for idx, msg in enumerate(window):
         role = msg.get("role", "user")
-        # Map assistant -> model
         role = "model" if role == "assistant" else "user"
-        contents.append({"role": role, "parts": [{"text": str(msg.get("content", ""))}]})
+        parts: List[Dict[str, Any]] = [{"text": str(msg.get("content", ""))}]
+        # If this is the latest user message, append any provided attachments as inline_data parts
+        if idx == len(window) - 1 and role == "user" and latest_attachments:
+            for att in latest_attachments:
+                # Expecting items like {"inline_data": {"mime_type": ..., "data": ...}}
+                try:
+                    inline_data = att.get("inline_data") if isinstance(att, dict) else None
+                    if inline_data and isinstance(inline_data, dict) and inline_data.get("data"):
+                        parts.append({"inline_data": {"mime_type": str(inline_data.get("mime_type") or inline_data.get("mimeType") or "application/octet-stream"), "data": str(inline_data.get("data"))}})
+                except Exception:
+                    pass
+        contents.append({"role": role, "parts": parts})
     if latest_user_prompt is not None:
-        contents.append({"role": "user", "parts": [{"text": latest_user_prompt}]})
+        parts2: List[Dict[str, Any]] = [{"text": latest_user_prompt}]
+        if latest_attachments:
+            for att in latest_attachments:
+                try:
+                    inline_data = att.get("inline_data") if isinstance(att, dict) else None
+                    if inline_data and isinstance(inline_data, dict) and inline_data.get("data"):
+                        parts2.append({"inline_data": {"mime_type": str(inline_data.get("mime_type") or inline_data.get("mimeType") or "application/octet-stream"), "data": str(inline_data.get("data"))}})
+                except Exception:
+                    pass
+        contents.append({"role": "user", "parts": parts2})
     return contents
 
 
@@ -413,10 +433,16 @@ HTML_INDEX = """
         fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial'] },
         extend: {
           colors: {
-            ink: '#0c0c0f'
+            ink: '#0c0c0f',
+            luxe: {
+              50: '#f6f6f7',
+              100: '#e7e7ea',
+              900: '#0b0b10'
+            }
           },
           boxShadow: {
-            raised: '0 8px 24px -10px rgba(0,0,0,.6)'
+            raised: '0 8px 24px -10px rgba(0,0,0,.6)',
+            luxe: '0 12px 40px -12px rgba(0,0,0,.65)'
           }
         }
       }
@@ -426,7 +452,11 @@ HTML_INDEX = """
   <style>
     :root { color-scheme: dark; -webkit-text-size-adjust: 100%; }
     html, body { height: 100%; }
-    body { background: #0c0c0f; }
+    body { background:
+      radial-gradient(80rem 40rem at 20% -10%, rgba(80,80,120,.16), transparent 45%),
+      radial-gradient(60rem 30rem at 110% 10%, rgba(60,90,60,.14), transparent 40%),
+      linear-gradient(#0b0b10, #09090c);
+    }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
     .msg { max-width: 72ch; }
     .skeleton { position: relative; overflow: hidden; }
@@ -440,9 +470,9 @@ HTML_INDEX = """
 <body class="font-sans bg-ink text-zinc-100">
   <div class="min-h-[100svh] flex flex-col">
     <header class="p-4 flex justify-center">
-      <button class="px-4 py-1.5 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow">
-        ✨ Upgrade to Plus
-      </button>
+      <div class="px-4 py-2 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow backdrop-blur">
+        ✨ AIChatPal Premier
+      </div>
     </header>
 
     <main class="flex-1">
@@ -454,11 +484,19 @@ HTML_INDEX = """
     <div class="fixed inset-x-0 bottom-0 z-40 safe-bottom bg-gradient-to-t from-ink to-ink/95 border-t border-zinc-900/70">
       <form id="composer" class="max-w-3xl mx-auto px-3 py-3">
         <div class="flex items-end gap-2">
-          <div class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors">
+          <div class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors relative backdrop-blur">
+            <div id="attachmentPreview" class="px-3 pt-3 pb-0 hidden flex-wrap gap-2"></div>
             <div class="flex items-center">
               <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Attach">＋</button>
               <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
-              <button type="button" id="micBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200" title="Voice">🎤</button>
+            </div>
+            <div id="attachMenu" class="hidden absolute bottom-[54px] left-2 w-56 rounded-xl border border-zinc-800 bg-zinc-950/90 shadow-luxe backdrop-blur p-1">
+              <button type="button" id="actionAddPhotos" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200"><span>🖼️</span><span>Add photos</span></button>
+              <button type="button" id="actionTakePhoto" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200"><span>📷</span><span>Take photo</span></button>
+              <button type="button" id="actionAddFiles" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200"><span>📎</span><span>Add files</span></button>
+              <input id="photosInput" type="file" accept="image/*" multiple class="hidden" />
+              <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
+              <input id="filesInput" type="file" multiple class="hidden" />
             </div>
           </div>
           <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center">
@@ -480,6 +518,17 @@ HTML_INDEX = """
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
   const limitP = document.getElementById('limit');
+  const attachBtn = document.getElementById('attachBtn');
+  const attachMenu = document.getElementById('attachMenu');
+  const photosInput = document.getElementById('photosInput');
+  const cameraInput = document.getElementById('cameraInput');
+  const filesInput = document.getElementById('filesInput');
+  const attachmentPreview = document.getElementById('attachmentPreview');
+
+  const MAX_ATTACHMENTS = 5;
+  const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB per file
+  const MAX_TOTAL_SIZE = 12 * 1024 * 1024; // 12MB per message
+  let pendingAttachments = [];
 
   function showToast(message, variant = 'default', timeout = 2200) {
     const host = document.getElementById('toasts');
@@ -527,7 +576,7 @@ HTML_INDEX = """
     row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
     const isUser = role === 'user';
     const bubble = document.createElement('div');
-    bubble.className = 'msg rounded-2xl px-4 py-3 ' + (isUser ? 'bg-emerald-600 text-white shadow-raised' : 'bg-zinc-900/70 border border-zinc-800');
+    bubble.className = 'msg rounded-2xl px-4 py-3 ' + (isUser ? 'bg-emerald-600 text-white shadow-raised' : 'bg-zinc-900/70 border border-zinc-800 backdrop-blur');
     bubble.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
     row.appendChild(bubble);
     chat.appendChild(row);
@@ -540,7 +589,7 @@ HTML_INDEX = """
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 justify-start';
     const b = document.createElement('div');
-    b.className = 'msg rounded-2xl px-4 py-3 bg-zinc-900/70 border border-zinc-800 skeleton';
+    b.className = 'msg rounded-2xl px-4 py-3 bg-zinc-900/70 border border-zinc-800 skeleton backdrop-blur';
     b.innerHTML = '<div class="h-4 w-3/4 mb-2 bg-zinc-800 rounded"></div><div class="h-4 w-5/6 bg-zinc-800 rounded"></div>';
     row.appendChild(b);
     chat.appendChild(row);
@@ -575,19 +624,75 @@ HTML_INDEX = """
     attachCopyHandlers();
   }
 
+  function bytesToSize(bytes){
+    const units = ['B','KB','MB','GB'];
+    let i = 0; let num = bytes;
+    while (num >= 1024 && i < units.length-1){ num /= 1024; i++; }
+    return `${num.toFixed(num >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+  }
+
+  function renderAttachmentPreview(){
+    if (!pendingAttachments.length){ attachmentPreview.classList.add('hidden'); attachmentPreview.innerHTML = ''; return; }
+    attachmentPreview.classList.remove('hidden');
+    const frag = document.createDocumentFragment();
+    pendingAttachments.forEach((a, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'inline-flex items-center gap-2 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-900/70 text-xs text-zinc-200';
+      if (a.kind === 'image'){
+        const img = document.createElement('img'); img.src = a.base64; img.alt = a.name; img.className = 'h-7 w-7 rounded object-cover'; chip.appendChild(img);
+      } else {
+        const span = document.createElement('span'); span.textContent = '📎'; chip.appendChild(span);
+      }
+      const label = document.createElement('span'); label.textContent = `${a.name} • ${bytesToSize(a.size)}`; chip.appendChild(label);
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'ml-1 text-zinc-400 hover:text-zinc-200'; x.textContent = '✕';
+      x.addEventListener('click', () => { pendingAttachments.splice(idx,1); renderAttachmentPreview(); });
+      chip.appendChild(x);
+      frag.appendChild(chip);
+    });
+    attachmentPreview.innerHTML = '';
+    attachmentPreview.appendChild(frag);
+  }
+
+  function addFiles(files){
+    const arr = Array.from(files || []);
+    if (!arr.length) return;
+    if (pendingAttachments.length + arr.length > MAX_ATTACHMENTS){ showToast('Too many attachments','error'); return; }
+    const currentTotal = pendingAttachments.reduce((s,a)=>s+a.size,0);
+    const newTotal = currentTotal + arr.reduce((s,f)=>s+f.size,0);
+    if (newTotal > MAX_TOTAL_SIZE){ showToast('Attachments too large','error'); return; }
+    arr.forEach(file => {
+      if (file.size > MAX_FILE_SIZE){ showToast(`${file.name} is too large`,'error'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = String(reader.result || '');
+        const kind = (file.type || '').startsWith('image/') ? 'image' : 'file';
+        pendingAttachments.push({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, base64, kind });
+        renderAttachmentPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function toggleAttachMenu(show){
+    const willShow = show === undefined ? attachMenu.classList.contains('hidden') : !!show;
+    attachMenu.classList.toggle('hidden', !willShow);
+  }
+
   async function sendMessage(){
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && !pendingAttachments.length) return;
     input.value = '';
     autoResizeTextarea(input);
-    bubble('user', text);
+    bubble('user', text || (pendingAttachments.length ? '(Sent attachments)' : ''));
+    const payloadAttachments = pendingAttachments.map(a => ({ name: a.name, mime: a.mime, size: a.size, data: (a.base64.split(',')[1] || '') }));
+    pendingAttachments = []; renderAttachmentPreview(); toggleAttachMenu(false);
     sendBtn.disabled = true;
     const prev = sendBtn.innerHTML;
     sendBtn.innerHTML = '<span class="opacity-80">…</span>';
     const thinkingRow = createThinkingBubble();
     chat.scrollTop = chat.scrollHeight;
     try{
-      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text}) });
+      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, attachments: payloadAttachments}) });
       const data = await res.json();
       thinkingRow.remove();
       if (data.error){ bubble('assistant', `Error: ${data.error}`); showToast(data.error, 'error'); }
@@ -606,9 +711,15 @@ HTML_INDEX = """
   input.addEventListener('input', () => autoResizeTextarea(input));
   input.addEventListener('focus', () => { setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50); });
 
-  // Non-functional helpers for now
-  document.getElementById('attachBtn')?.addEventListener('click', () => showToast('Attachments not implemented'));
-  document.getElementById('micBtn')?.addEventListener('click', () => showToast('Voice not implemented'));
+  // Attachments menu and actions
+  attachBtn?.addEventListener('click', (e) => { e.stopPropagation(); toggleAttachMenu(); });
+  document.addEventListener('click', (e) => { if (!attachMenu.contains(e.target) && e.target !== attachBtn) toggleAttachMenu(false); });
+  document.getElementById('actionAddPhotos')?.addEventListener('click', () => photosInput.click());
+  document.getElementById('actionTakePhoto')?.addEventListener('click', () => cameraInput.click());
+  document.getElementById('actionAddFiles')?.addEventListener('click', () => filesInput.click());
+  photosInput.addEventListener('change', (e) => { addFiles(e.target.files); photosInput.value = ''; toggleAttachMenu(false); });
+  cameraInput.addEventListener('change', (e) => { addFiles(e.target.files); cameraInput.value = ''; toggleAttachMenu(false); });
+  filesInput.addEventListener('change', (e) => { addFiles(e.target.files); filesInput.value = ''; toggleAttachMenu(false); });
 
   loadHistory();
   </script>
@@ -889,7 +1000,7 @@ def _create_flask_app() -> Flask:
         cid, _ = _ensure_current_conversation(user_id)
         data = request.get_json(silent=True) or {}
         text = str(data.get("message", "")).strip()
-        if not text:
+        if not text and not data.get("attachments"):
             return jsonify({"error": "Empty message"}), 400
 
         # Rate limit for free users
@@ -901,9 +1012,42 @@ def _create_flask_app() -> Flask:
 
         history = load_conversation_history(user_id, cid)
         now = datetime.now(timezone.utc)
-        history.append({"role": "user", "content": text, "timestamp": now})
 
-        contents = _build_gemini_contents(history)
+        # Parse attachments
+        raw_attachments = data.get("attachments") or []
+        attachment_parts: List[Dict[str, Any]] = []
+        attachment_names: List[str] = []
+        try:
+            if isinstance(raw_attachments, list):
+                if len(raw_attachments) > 5:
+                    return jsonify({"error": "Too many attachments (max 5)", "left": _free_left(user_id)}), 400
+                total_size = 0
+                for a in raw_attachments:
+                    if not isinstance(a, dict):
+                        continue
+                    name = str(a.get("name") or "attachment")
+                    mime = str(a.get("mime") or "application/octet-stream")
+                    data_b64 = str(a.get("data") or "")
+                    size = int(a.get("size") or 0)
+                    if not data_b64:
+                        continue
+                    if size > 8 * 1024 * 1024:
+                        return jsonify({"error": f"{name} is too large (max 8MB)", "left": _free_left(user_id)}), 400
+                    total_size += size
+                    attachment_parts.append({"inline_data": {"mime_type": mime, "data": data_b64}})
+                    attachment_names.append(name)
+                if total_size > 12 * 1024 * 1024:
+                    return jsonify({"error": "Attachments too large (max 12MB total)", "left": _free_left(user_id)}), 400
+        except Exception:
+            pass
+
+        user_content = text
+        if attachment_names:
+            preview = ", ".join(attachment_names[:3]) + ("…" if len(attachment_names) > 3 else "")
+            user_content = (text + ("\n\n(Attached: " + preview + ")" if text else f"(Attached: {preview})")).strip()
+        history.append({"role": "user", "content": user_content, "timestamp": now})
+
+        contents = _build_gemini_contents(history, latest_attachments=attachment_parts)
         reply_text, err = _stream_gemini_response(contents)
         if err or not reply_text:
             err_text = err or "Unknown error"
@@ -922,7 +1066,7 @@ def _create_flask_app() -> Flask:
             _, _, _, col_convos = _get_db_collections()
             doc = col_convos.find_one({"user_id": user_id, "id": cid})
             if doc and (not doc.get("title") or doc.get("title") == "New chat"):
-                preview = text.strip().split("\n")[0][:50]
+                preview = (text or user_content).strip().split("\n")[0][:50]
                 col_convos.update_one({"user_id": user_id, "id": cid}, {"$set": {"title": preview or "New chat"}})
         except Exception:
             pass
