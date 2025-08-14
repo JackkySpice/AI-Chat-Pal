@@ -432,7 +432,7 @@ HTML_INDEX = """
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
   <style>
-    :root { color-scheme: light dark; -webkit-text-size-adjust: 100%; }
+    :root { color-scheme: light dark; -webkit-text-size-adjust: 100%; --composer-pad: .75rem; --bubble-px: 1rem; --bubble-py: .75rem; --accent-from:#4f46e5; --accent-to:#9333ea; --accent-alt:#ec4899; --bg-grad-1: rgba(79,70,229,0.12); --bg-grad-2: rgba(147,51,234,0.10); }
     * { -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
     body { overscroll-behavior-y: contain; }
@@ -441,7 +441,8 @@ HTML_INDEX = """
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
     .composer-safe-bottom { bottom: calc(env(safe-area-inset-bottom) + 0px); }
     .scroll-smooth { scroll-behavior: smooth; }
-    .msg { max-width: 72ch; }
+    .msg { max-width: 72ch; padding: var(--bubble-py) var(--bubble-px) !important; }
+    #composer { padding: var(--composer-pad) !important; }
     .skeleton { position: relative; overflow: hidden; }
     .skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.08) 40%, rgba(255,255,255,.18) 60%, transparent 100%); animation: shimmer 1.1s linear infinite; }
     @keyframes shimmer { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }
@@ -449,13 +450,39 @@ HTML_INDEX = """
     pre { position: relative; }
     pre code { white-space: pre-wrap; word-break: break-word; }
     .copy-btn { position: absolute; top: .5rem; right: .5rem; }
+
+    /* Accent utilities driven by CSS vars */
+    .bg-accent { background-image: linear-gradient(to right, var(--accent-from), var(--accent-to)); }
+    .bg-accent-br { background-image: linear-gradient(to bottom right, var(--accent-from), var(--accent-to)); }
+    .btn-accent { background-image: linear-gradient(to right, var(--accent-from), var(--accent-to)); color: #fff; }
+    .text-accent-gradient { background-image: linear-gradient(to right, var(--accent-from), var(--accent-alt)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+    /* Accent palettes */
+    body.accent-violet { --accent-from:#4f46e5; --accent-to:#9333ea; --accent-alt:#ec4899; --bg-grad-1: rgba(79,70,229,0.12); --bg-grad-2: rgba(147,51,234,0.10); }
+    body.accent-indigo { --accent-from:#6366f1; --accent-to:#3b82f6; --accent-alt:#06b6d4; --bg-grad-1: rgba(99,102,241,0.12); --bg-grad-2: rgba(59,130,246,0.10); }
+    body.accent-emerald { --accent-from:#10b981; --accent-to:#059669; --accent-alt:#22d3ee; --bg-grad-1: rgba(16,185,129,0.12); --bg-grad-2: rgba(5,150,105,0.10); }
+    body.accent-rose { --accent-from:#f43f5e; --accent-to:#ec4899; --accent-alt:#fb7185; --bg-grad-1: rgba(244,63,94,0.12); --bg-grad-2: rgba(236,72,153,0.10); }
+    body.accent-orange { --accent-from:#f97316; --accent-to:#f59e0b; --accent-alt:#f43f5e; --bg-grad-1: rgba(249,115,22,0.12); --bg-grad-2: rgba(245,158,11,0.10); }
+
+    /* Background variants */
+    body.bg-gradient { background-image: radial-gradient(900px 600px at 100% -10%, var(--bg-grad-1), transparent 70%), radial-gradient(800px 600px at -10% 110%, var(--bg-grad-2), transparent 60%); background-color: transparent; }
+    body.bg-solid { background-image: none; }
+
+    /* Density, font, placement */
+    body.compact { --composer-pad:.5rem; --bubble-px:.75rem; --bubble-py:.5rem; }
+    body.ts-lg { font-size: 17px; }
+    body.ts-xl { font-size: 18px; }
+    body.font-system { font-family: ui-sans-serif, system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; }
+    body.hide-fab #fabNewChat { display: none !important; }
+    body.buttons-left #composer .flex.items-end { flex-direction: row-reverse; }
+
     @media (prefers-reduced-motion: reduce) {
       * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
       .glass { backdrop-filter: none; }
     }
   </style>
 </head>
-<body class="font-sans bg-white dark:bg-ink text-slate-900 dark:text-slate-100">
+<body class="font-sans bg-white dark:bg-ink text-slate-900 dark:text-slate-100 accent-violet bg-solid">
   <div class="min-h-[100svh] flex flex-col">
     <header class="sticky top-0 z-20 glass border-b border-slate-200/70 dark:border-slate-800/70">
       <div class="px-4 py-3 flex items-center justify-between">
@@ -463,14 +490,14 @@ HTML_INDEX = """
           <button id="openSheet" class="md:hidden px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Open menu">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
           </button>
-          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 shadow-elevated"></div>
+          <div class="h-8 w-8 rounded-xl bg-accent-br shadow-elevated"></div>
           <div>
             <div class="font-extrabold tracking-tight">AIChatPal</div>
             <div class="text-[11px] text-slate-500 dark:text-slate-400">Gemini powered</div>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button id="newChatTop" class="hidden md:inline-flex px-3 py-2 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-elevated hover:brightness-110">New chat</button>
+          <button id="newChatTop" class="hidden md:inline-flex px-3 py-2 rounded-lg btn-accent text-white shadow-elevated hover:brightness-110">New chat</button>
           <button id="toggleTheme" class="px-3 py-2 rounded-lg bg-slate-900/5 dark:bg-white/10" aria-label="Toggle theme"><span id="themeIcon">🌙</span></button>
         </div>
       </div>
@@ -479,11 +506,11 @@ HTML_INDEX = """
     <main class="flex-1 relative">
       <div id="chat" class="scroll-smooth overflow-y-auto px-3 pt-3 pb-28 md:pb-4 max-w-3xl mx-auto w-full" role="log" aria-live="polite" aria-relevant="additions"></div>
 
-      <button id="scrollBottom" class="hidden fixed right-4 bottom-28 md:bottom-24 z-30 h-10 w-10 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated" aria-label="Scroll to bottom">
+      <button id="scrollBottom" class="hidden fixed right-4 bottom-28 md:bottom-24 z-30 h-10 w-10 rounded-full text-white btn-accent shadow-elevated" aria-label="Scroll to bottom">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 m-auto"><path d="M6 9l6 6 6-6"/></svg>
       </button>
 
-      <button id="fabNewChat" class="md:hidden fixed right-4 bottom-[92px] z-30 h-12 w-12 rounded-full text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated" aria-label="New chat">
+      <button id="fabNewChat" class="md:hidden fixed right-4 bottom-[92px] z-30 h-12 w-12 rounded-full text-white btn-accent shadow-elevated" aria-label="New chat">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 m-auto"><path d="M12 5v14M5 12h14"/></svg>
       </button>
 
@@ -498,7 +525,7 @@ HTML_INDEX = """
                   <p id="limit" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-300"></p>
                 </div>
               </div>
-              <button id="send" type="submit" class="h-12 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated flex items-center gap-2">
+              <button id="send" type="submit" class="h-12 px-5 rounded-xl btn-accent text-white font-semibold hover:brightness-110 disabled:opacity-50 shadow-elevated flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 <span>Send</span>
               </button>
@@ -518,7 +545,7 @@ HTML_INDEX = """
     <div class="flex items-center justify-between pb-2">
       <div class="text-sm font-semibold text-slate-600 dark:text-slate-300">Conversations</div>
       <div class="flex items-center gap-2">
-        <button id="newChatSheet" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow">New</button>
+        <button id="newChatSheet" class="px-3 py-1.5 rounded-lg btn-accent text-white shadow">New</button>
         <button id="closeSheet" class="px-2 py-1 rounded-lg border border-slate-200/70 dark:border-slate-700/70">Close</button>
       </div>
     </div>
@@ -531,6 +558,62 @@ HTML_INDEX = """
       <button id="keyBtn" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Activate key</button>
       <button id="loginBtn" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Admin login</button>
       <button id="logoutBtn" class="hidden px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Logout</button>
+    </div>
+
+    <div class="mt-5 border-t border-slate-200/70 dark:border-slate-800/70 pt-3">
+      <div class="text-sm font-semibold text-slate-600 dark:text-slate-300">Appearance</div>
+      <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+        <label class="space-y-1">
+          <div class="text-xs text-slate-500">Accent</div>
+          <select id="accentSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
+            <option value="violet">Violet</option>
+            <option value="indigo">Indigo</option>
+            <option value="emerald">Emerald</option>
+            <option value="rose">Rose</option>
+            <option value="orange">Orange</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <div class="text-xs text-slate-500">Background</div>
+          <select id="bgSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
+            <option value="solid">Solid</option>
+            <option value="gradient">Gradient</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <div class="text-xs text-slate-500">Density</div>
+          <select id="densitySelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
+            <option value="comfortable">Comfortable</option>
+            <option value="compact">Compact</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <div class="text-xs text-slate-500">Text size</div>
+          <select id="textSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
+            <option value="md">Default</option>
+            <option value="lg">Large</option>
+            <option value="xl">Extra large</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <div class="text-xs text-slate-500">Font</div>
+          <select id="fontSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
+            <option value="inter">Inter</option>
+            <option value="system">System</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <div class="text-xs text-slate-500">Send button</div>
+          <select id="btnPlaceSelect" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+          </select>
+        </label>
+        <label class="col-span-2 flex items-center gap-2 px-2 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+          <input id="fabToggle" type="checkbox" class="h-4 w-4">
+          <span>Show floating new chat button</span>
+        </label>
+      </div>
     </div>
   </aside>
 
@@ -558,6 +641,15 @@ HTML_INDEX = """
   const newChatSheet = document.getElementById('newChatSheet');
   const composer = document.getElementById('composer');
   const themeIcon = document.getElementById('themeIcon');
+
+  // Appearance controls
+  const accentSelect = document.getElementById('accentSelect');
+  const bgSelect = document.getElementById('bgSelect');
+  const densitySelect = document.getElementById('densitySelect');
+  const textSelect = document.getElementById('textSelect');
+  const fontSelect = document.getElementById('fontSelect');
+  const btnPlaceSelect = document.getElementById('btnPlaceSelect');
+  const fabToggle = document.getElementById('fabToggle');
 
   let state = { conversations: [], current: null, is_admin: false };
 
@@ -612,8 +704,8 @@ HTML_INDEX = """
     row.className = 'w-full flex items-start gap-3 ' + (role === 'user' ? 'justify-end' : 'justify-start');
     const bubble = document.createElement('div');
     const isUser = role === 'user';
-    bubble.className = 'msg rounded-2xl px-4 py-3 shadow ' + (isUser ? 'text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-elevated' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur');
-    bubble.innerHTML = isUser ? `<div class="tracking-tight">${content.replace(/</g,'&lt;')}</div>` : `<div class="prose prose-slate dark:prose-invert max-w-none">${renderMarkdownToHtml(content)}</div>`;
+    bubble.className = 'msg rounded-2xl shadow ' + (isUser ? 'text-white bg-accent shadow-elevated' : 'bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur');
+    bubble.innerHTML = isUser ? `<div class=\"tracking-tight\">${content.replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-slate dark:prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
     row.appendChild(bubble);
     chat.appendChild(row);
     if (!isUser) attachCopyHandlers(bubble);
@@ -627,7 +719,7 @@ HTML_INDEX = """
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 justify-start';
     const b = document.createElement('div');
-    b.className = 'msg rounded-2xl px-4 py-3 bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur skeleton';
+    b.className = 'msg rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur skeleton';
     b.innerHTML = '<div class="h-4 w-3/4 mb-2 bg-slate-200/60 dark:bg-slate-700/60 rounded"></div><div class="h-4 w-5/6 bg-slate-200/60 dark:bg-slate-700/60 rounded"></div>';
     row.appendChild(b);
     chat.appendChild(row);
@@ -639,11 +731,53 @@ HTML_INDEX = """
   if (localStorage.getItem('theme') === 'dark'){ setTheme(true); } else { themeIcon.textContent = '🌙'; }
   toggleTheme.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
 
+  // Preferences
+  const defaultPrefs = { accent:'violet', background:'solid', density:'comfortable', textSize:'md', font:'inter', buttons:'right', showFab:true };
+  function loadPrefs(){ try { return Object.assign({}, defaultPrefs, JSON.parse(localStorage.getItem('ui_prefs')||'{}')); } catch(e){ return Object.assign({}, defaultPrefs); } }
+  let prefs = loadPrefs();
+  function savePrefs(){ localStorage.setItem('ui_prefs', JSON.stringify(prefs)); }
+  function applyPrefs(){
+    // Accent classes
+    ['violet','indigo','emerald','rose','orange'].forEach(a => document.body.classList.remove('accent-'+a));
+    document.body.classList.add('accent-'+prefs.accent);
+    // Background
+    document.body.classList.toggle('bg-gradient', prefs.background === 'gradient');
+    document.body.classList.toggle('bg-solid', prefs.background !== 'gradient');
+    // Density
+    document.body.classList.toggle('compact', prefs.density === 'compact');
+    // Text size
+    document.body.classList.toggle('ts-lg', prefs.textSize === 'lg');
+    document.body.classList.toggle('ts-xl', prefs.textSize === 'xl');
+    // Font
+    document.body.classList.toggle('font-system', prefs.font === 'system');
+    // Button placement / FAB
+    document.body.classList.toggle('buttons-left', prefs.buttons === 'left');
+    document.body.classList.toggle('hide-fab', !prefs.showFab);
+
+    // Reflect in controls if present
+    if (accentSelect) accentSelect.value = prefs.accent;
+    if (bgSelect) bgSelect.value = prefs.background;
+    if (densitySelect) densitySelect.value = prefs.density;
+    if (textSelect) textSelect.value = prefs.textSize;
+    if (fontSelect) fontSelect.value = prefs.font;
+    if (btnPlaceSelect) btnPlaceSelect.value = prefs.buttons;
+    if (fabToggle) fabToggle.checked = !!prefs.showFab;
+  }
+  applyPrefs();
+
   function openSheet(){ sheet.classList.remove('hidden'); sheetBackdrop.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
   function closeSheet(){ sheet.classList.add('hidden'); sheetBackdrop.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
   openSheetBtn?.addEventListener('click', openSheet);
   closeSheetBtn?.addEventListener('click', closeSheet);
   sheetBackdrop?.addEventListener('click', closeSheet);
+
+  if (accentSelect) accentSelect.addEventListener('change', () => { prefs.accent = accentSelect.value; savePrefs(); applyPrefs(); });
+  if (bgSelect) bgSelect.addEventListener('change', () => { prefs.background = bgSelect.value; savePrefs(); applyPrefs(); });
+  if (densitySelect) densitySelect.addEventListener('change', () => { prefs.density = densitySelect.value; savePrefs(); applyPrefs(); });
+  if (textSelect) textSelect.addEventListener('change', () => { prefs.textSize = textSelect.value; savePrefs(); applyPrefs(); });
+  if (fontSelect) fontSelect.addEventListener('change', () => { prefs.font = fontSelect.value; savePrefs(); applyPrefs(); });
+  if (btnPlaceSelect) btnPlaceSelect.addEventListener('change', () => { prefs.buttons = btnPlaceSelect.value; savePrefs(); applyPrefs(); });
+  if (fabToggle) fabToggle.addEventListener('change', () => { prefs.showFab = !!fabToggle.checked; savePrefs(); applyPrefs(); });
 
   function renderConversations(){
     convoList.innerHTML = '';
@@ -655,7 +789,7 @@ HTML_INDEX = """
         row.className = 'flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/60';
         const left = document.createElement('button');
         left.className = 'text-left flex-1';
-        left.innerHTML = `<div class="text-sm font-medium truncate">${(c.title || 'Untitled')}</div><div class="text-[11px] text-slate-500">${new Date(c.updated_at).toLocaleString()}</div>`;
+        left.innerHTML = `<div class=\"text-sm font-medium truncate\">${(c.title || 'Untitled')}</div><div class=\"text-[11px] text-slate-500\">${new Date(c.updated_at).toLocaleString()}</div>`;
         left.addEventListener('click', async () => { await selectConversation(c.id); closeSheet(); });
         const actions = document.createElement('div');
         actions.className = 'flex items-center gap-2';
@@ -716,16 +850,16 @@ HTML_INDEX = """
       const overlay = document.createElement('div');
       overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
       overlay.innerHTML = `
-        <div class="w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
-          <div class="p-4 border-b border-slate-200/70 dark:border-slate-800/70">
-            <div class="text-lg font-semibold">${title}</div>
-            <div class="text-sm text-slate-500">${description}</div>
+        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
+          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
+            <div class=\"text-lg font-semibold\">${title}</div>
+            <div class=\"text-sm text-slate-500\">${description}</div>
           </div>
-          <div class="p-4 space-y-3">
-            <input id="_prompt_input" type="${type}" placeholder="${placeholder}" class="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            <div class="flex justify-end gap-2">
-              <button id="_cancel" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Cancel</button>
-              <button id="_ok" class="px-3 py-2 rounded-xl text-white bg-gradient-to-r from-brand-600 to-purple-600">${confirmText}</button>
+          <div class=\"p-4 space-y-3\">
+            <input id=\"_prompt_input\" type=\"${type}\" placeholder=\"${placeholder}\" class=\"w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-brand-500\" />
+            <div class=\"flex justify-end gap-2\">
+              <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
+              <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white btn-accent\">${confirmText}</button>
             </div>
           </div>
         </div>`;
@@ -743,14 +877,14 @@ HTML_INDEX = """
       const overlay = document.createElement('div');
       overlay.className = 'fixed inset-0 z-50 grid place-items-center bg-black/40 p-4';
       overlay.innerHTML = `
-        <div class="w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
-          <div class="p-4 border-b border-slate-200/70 dark:border-slate-800/70">
-            <div class="text-lg font-semibold">${title}</div>
-            <div class="text-sm text-slate-500">${description}</div>
+        <div class=\"w-full max-w-md rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
+          <div class=\"p-4 border-b border-slate-200/70 dark:border-slate-800/70\">
+            <div class=\"text-lg font-semibold\">${title}</div>
+            <div class=\"text-sm text-slate-500\">${description}</div>
           </div>
-          <div class="p-4 flex justify-end gap-2">
-            <button id="_cancel" class="px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70">Cancel</button>
-            <button id="_ok" class="px-3 py-2 rounded-xl text-white bg-rose-600 hover:bg-rose-500">${confirmText}</button>
+          <div class=\"p-4 flex justify-end gap-2\">
+            <button id=\"_cancel\" class=\"px-3 py-2 rounded-xl border border-slate-200/70 dark:border-slate-700/70\">Cancel</button>
+            <button id=\"_ok\" class=\"px-3 py-2 rounded-xl text-white bg-rose-600 hover:bg-rose-500\">${confirmText}</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
@@ -767,12 +901,12 @@ HTML_INDEX = """
     (data.history || []).forEach(m => bubble(m.role, m.content));
     if ((data.history || []).length === 0) {
       chat.innerHTML = `
-        <div class="w-full grid place-items-center">
-          <div class="max-w-xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated">
-            <div class="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-elevated">✨</div>
-            <h2 class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600">Welcome to AIChatPal</h2>
-            <p class="text-slate-600 dark:text-slate-300">Start a conversation and experience fast, beautiful AI answers.</p>
-            <div><button class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white" onclick="document.getElementById('input').focus()">Start typing</button></div>
+        <div class=\"w-full grid place-items-center\">
+          <div class=\"max-w-xl text-center space-y-4 p-6 rounded-2xl glass border border-slate-200/70 dark:border-slate-800/70 shadow-elevated\">
+            <div class=\"inline-flex items-center justify-center h-12 w-12 rounded-xl bg-accent-br text-white shadow-elevated\">✨</div>
+            <h2 class=\"text-xl font-extrabold text-accent-gradient\">Welcome to AIChatPal</h2>
+            <p class=\"text-slate-600 dark:text-slate-300\">Start a conversation and experience fast, beautiful AI answers.</p>
+            <div><button class=\"px-4 py-2 rounded-xl btn-accent text-white\" onclick=\"document.getElementById('input').focus()\">Start typing</button></div>
           </div>
         </div>`;
     }
