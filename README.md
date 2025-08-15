@@ -28,6 +28,7 @@ Environment Variables
 - `GEMINI_MODEL`: optional model name (default `gemini-2.5-pro`)
 - `GEMINI_SYSTEM_PROMPT`: optional system instruction string
 - `FLASK_SECRET_KEY`: optional Flask secret key for cookies (a random string)
+- `ENABLE_DAILY_RESET_THREAD`: optional; set to `0` to disable the built-in daily reset thread (defaults to enabled)
 
 Behavior
 - Free tier: 3 messages/day per user (reset daily at 00:00 server time)
@@ -46,16 +47,30 @@ python3 -m pip install --break-system-packages -r requirements.txt
 
 Run
 ```bash
+# Either set env vars directly
 export GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 # Optional:
 # export MONGODB_URI=mongodb+srv://...
 # export GEMINI_MODEL=gemini-2.5-pro
 # export GEMINI_SYSTEM_PROMPT="You are AIChatPal, a helpful assistant."
 # export FLASK_SECRET_KEY="change_me"
+# export ENABLE_DAILY_RESET_THREAD=1
 
 python3 main.py
+```
+
+Using a .env file
+- `.env` is supported for local/dev. Create a file named `.env` next to `main.py`:
+```
+GEMINI_API_KEY=your_key_here
+MONGODB_URI=
+GEMINI_MODEL=gemini-2.5-pro
+GEMINI_SYSTEM_PROMPT=You are AIChatPal, a helpful assistant.
+FLASK_SECRET_KEY=change_me
+ENABLE_DAILY_RESET_THREAD=1
 ```
 
 Notes
 - The app serves a responsive chat page at `http://localhost:8080/`.
 - Message history is stored per-browser using a secure cookie `uid` to identify a user.
+- If `GEMINI_API_KEY` is not set, `/api/chat` will return a clear error message: `Gemini is not configured. Please set GEMINI_API_KEY.`
