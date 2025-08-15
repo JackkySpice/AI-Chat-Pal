@@ -594,6 +594,7 @@ HTML_INDEX = """
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
   <script>
+  window.addEventListener('DOMContentLoaded', () => {
   const chat = document.getElementById('chat');
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
@@ -922,7 +923,6 @@ HTML_INDEX = """
   }
 
   document.getElementById('composer').addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
-  sendBtn.addEventListener('click', sendMessage);
   input.addEventListener('keydown', (e) => { if ((e.key === 'Enter' && !e.shiftKey) || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))){ e.preventDefault(); sendMessage(); }});
   input.addEventListener('input', () => autoResizeTextarea(input));
   input.addEventListener('focus', () => { setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50); });
@@ -950,6 +950,7 @@ HTML_INDEX = """
 
   loadConversations();
   loadHistory();
+  });
   </script>
 </body>
 </html>
