@@ -6,7 +6,9 @@ import traceback
 from datetime import datetime, timedelta, timezone, time as dtime
 from functools import lru_cache
 from threading import Thread
+from time import sleep
 from typing import Any, Dict, List, Optional, Tuple
+from dotenv import load_dotenv
 
 # Configure logging early
 logging.basicConfig(
@@ -14,6 +16,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("AIChatPalWeb")
+
+# Load .env for local development and container setups
+load_dotenv()
 
 # Globals lazily initialized
 _DB_CLIENT = None  # type: ignore[var-annotated]
@@ -407,6 +412,44 @@ def _stream_gemini_response(contents: List[Dict[str, Any]]) -> Tuple[Optional[st
         _log_admin(err)
         return None, err
 
+
+def _estimate_base64_bytes(data_b64: str) -> int:
+    """Estimate decoded bytes of a base64 string without allocating large buffers.
+
+    Uses length-based estimation: floor(n * 3 / 4) minus padding. Returns 0 on error.
+    """
+    try:
+        s = data_b64.strip()
+        n = len(s)
+        padding = 2 if s.endswith("==") else (1 if s.endswith("=") else 0)
+        return max(0, (n * 3) // 4 - padding)
+    except Exception:
+        return 0
+
+
+def _start_daily_reset_thread_if_enabled() -> None:
+    """Start a background thread to reset daily free message counts at local midnight.
+
+    Controlled by ENABLE_DAILY_RESET_THREAD env (default enabled).
+    """
+    flag = os.getenv("ENABLE_DAILY_RESET_THREAD", "1").lower()
+    if flag not in ("1", "true", "yes", "on"):  # disabled
+        return
+
+    def _worker() -> None:
+        while True:
+            try:
+                now = datetime.now()
+                tomorrow = now.date() + timedelta(days=1)
+                next_midnight = datetime.combine(tomorrow, dtime(0, 0))
+                sleep_secs = max(1, int((next_midnight - now).total_seconds()))
+                sleep(sleep_secs)
+                _reset_all_message_counts()
+            except Exception as e:
+                _log_admin(f"Daily reset thread error: {e}")
+                sleep(3600)
+
+    Thread(target=_worker, daemon=True).start()
 
 # -------------------------- Web App --------------------------
 from flask import Flask, request, jsonify, make_response, Response
@@ -1213,12 +1256,12 @@ def _create_flask_app() -> Flask:
                     name = str(a.get("name") or "attachment")
                     mime = str(a.get("mime") or "application/octet-stream")
                     data_b64 = str(a.get("data") or "")
-                    size = int(a.get("size") or 0)
                     if not data_b64:
                         continue
-                    if size > 8 * 1024 * 1024:
+                    size_bytes = _estimate_base64_bytes(data_b64)
+                    if size_bytes > 8 * 1024 * 1024:
                         return jsonify({"error": f"{name} is too large (max 8MB)", "left": _free_left(user_id)}), 400
-                    total_size += size
+                    total_size += size_bytes
                     attachment_parts.append({"inline_data": {"mime_type": mime, "data": data_b64}})
                     attachment_names.append(name)
                 if total_size > 12 * 1024 * 1024:
@@ -1291,6 +1334,7 @@ def main() -> None:
 
     port = int(os.getenv("PORT", "8080"))
     _log_admin("Starting Flask web server…")
+    _start_daily_reset_thread_if_enabled()
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 
