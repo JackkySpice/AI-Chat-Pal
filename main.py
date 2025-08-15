@@ -452,7 +452,7 @@ def _start_daily_reset_thread_if_enabled() -> None:
     Thread(target=_worker, daemon=True).start()
 
 # -------------------------- Web App --------------------------
-from flask import Flask, request, jsonify, make_response, Response
+from flask import Flask, request, jsonify, make_response, Response, stream_with_context
 import secrets
 
 
@@ -461,9 +461,14 @@ HTML_INDEX = """
 <html lang="en" class="dark">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>AIChatPal</title>
   <meta name="description" content="AIChatPal — Clean, fast AI chat powered by Gemini.">
+  <meta property="og:title" content="AIChatPal"/>
+  <meta property="og:description" content="Clean, fast AI chat powered by Gemini."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:image" content="/icon.svg"/>
+  <meta name="twitter:card" content="summary_large_image"/>
   <meta name="theme-color" content="#0c0c0f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -501,6 +506,8 @@ HTML_INDEX = """
       }
     };
   </script>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" href="/icon.svg" sizes="any" type="image/svg+xml"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
   <style>
     :root { color-scheme: dark; -webkit-text-size-adjust: 100%; }
@@ -548,10 +555,10 @@ HTML_INDEX = """
     <div class="flex-1 min-w-0 flex flex-col">
       <header class="sticky top-0 z-30 h-14 px-3 flex items-center justify-between bg-gradient-to-b from-ink/90 to-transparent border-b border-zinc-900/50 backdrop-blur">
         <div class="flex items-center gap-2">
-          <button id="sidebarToggle" class="md:hidden px-2 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/50 text-zinc-300">☰</button>
+                     <button id="sidebarToggle" class="md:hidden px-2 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/50 text-zinc-300" aria-label="Toggle conversations" aria-controls="sidebar" aria-expanded="false">☰</button>
           <div class="px-3 py-1.5 rounded-full text-sm bg-zinc-900/60 border border-zinc-800 text-zinc-200 shadow backdrop-blur">✨ AIChatPal Premier</div>
         </div>
-        <div class="text-xs text-zinc-500">Fast, polished AI chat</div>
+                   <div class="text-xs text-zinc-500 flex items-center gap-2"><span>Fast, polished AI chat</span><select id="modelSelect" class="bg-zinc-900/60 border border-zinc-800 rounded px-2 py-1 text-zinc-200 text-xs"><option value="gemini-2.5-pro">Accurate</option><option value="gemini-2.0-flash">Fast</option></select><button id="themeToggle" class="px-2 py-1 rounded border border-zinc-800 text-zinc-300">Theme</button></div>
       </header>
 
       <main class="flex-1">
@@ -563,26 +570,26 @@ HTML_INDEX = """
       <div class="fixed inset-x-0 bottom-0 z-40 safe-bottom bg-gradient-to-t from-ink to-ink/95 border-t border-zinc-900/70">
         <form id="composer" class="max-w-3xl mx-auto px-3 py-3">
           <div class="flex items-end gap-2">
-            <div id="composerBox" class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors relative backdrop-blur gradient-border">
+                         <div id="composerBox" class="flex-1 rounded-2xl bg-zinc-950/60 border border-zinc-900 focus-within:border-zinc-700 transition-colors relative backdrop-blur gradient-border" role="group" aria-label="Message composer">
               <div id="attachmentPreview" class="px-3 pt-3 pb-0 hidden flex-wrap gap-2"></div>
               <div class="flex items-center">
-                <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200 transition-colors" title="Attach">＋</button>
-                <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
+                <button type="button" id="attachBtn" class="shrink-0 p-3 text-zinc-400 hover:text-zinc-200 transition-colors" title="Attach" aria-label="Attachments" aria-haspopup="menu" aria-expanded="false" aria-controls="attachMenu">＋</button>
+                <textarea id="input" rows="1" placeholder="Ask anything" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" aria-label="Message" class="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-500 p-3 focus:outline-none resize-none"></textarea>
               </div>
-              <div id="attachMenu" class="hidden absolute bottom-[54px] left-2 w-56 rounded-xl border border-zinc-800 bg-zinc-950/90 shadow-luxe backdrop-blur p-1 animate-slide-up">
-                <button type="button" id="actionAddPhotos" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>🖼️</span><span>Add photos</span></button>
-                <button type="button" id="actionTakePhoto" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>📷</span><span>Take photo</span></button>
-                <button type="button" id="actionAddFiles" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>📎</span><span>Add files</span></button>
+                             <div id="attachMenu" class="hidden absolute bottom-[54px] left-2 w-56 rounded-xl border border-zinc-800 bg-zinc-950/90 shadow-luxe backdrop-blur p-1 animate-slide-up" role="menu" aria-label="Attachment options">
+                <button type="button" id="actionAddPhotos" role="menuitem" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>🖼️</span><span>Add photos</span></button>
+                <button type="button" id="actionTakePhoto" role="menuitem" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>📷</span><span>Take photo</span></button>
+                <button type="button" id="actionAddFiles" role="menuitem" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-900 text-zinc-200 transition-colors"><span>📎</span><span>Add files</span></button>
                 <input id="photosInput" type="file" accept="image/*" multiple class="hidden" />
                 <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
                 <input id="filesInput" type="file" multiple class="hidden" />
               </div>
             </div>
-            <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center transition-colors">
+                            <button id="send" type="submit" class="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-raised grid place-items-center transition-colors" aria-label="Send message">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M6 15l6-6 6 6"/></svg>
             </button>
           </div>
-          <div class="mt-2 text-[12px] text-zinc-500" id="limit"></div>
+                     <div class="mt-2 text-[12px] text-zinc-500 flex items-center gap-2" id="limit"><span id="limitText"></span><button id="unlockBtn" type="button" class="px-2 py-1 rounded border border-emerald-700 text-emerald-400 hover:bg-emerald-700/10">Unlock unlimited</button></div>
         </form>
       </div>
     </div>
@@ -590,15 +597,25 @@ HTML_INDEX = """
 
   <div id="toasts" class="fixed bottom-[96px] left-1/2 -translate-x-1/2 space-y-2 z-50"></div>
 
+  <dialog id="unlockDialog" class="rounded-xl border border-zinc-800 bg-zinc-950/95 p-4 text-sm text-zinc-200">
+    <form method="dialog">
+      <div class="mb-2 font-semibold">Unlock unlimited</div>
+      <input id="unlockKey" type="text" placeholder="Enter access key" class="w-full bg-zinc-900/60 border border-zinc-800 rounded px-2 py-1 text-zinc-100 mb-2" />
+      <div class="flex justify-end gap-2">
+        <button type="button" id="unlockSubmit" class="px-3 py-1 rounded bg-emerald-600 text-white">Activate</button>
+        <button value="cancel" class="px-3 py-1 rounded border border-zinc-700">Close</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
   <script>
   window.addEventListener('DOMContentLoaded', () => {
   const chat = document.getElementById('chat');
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
-  const limitP = document.getElementById('limit');
+  const limitP = document.getElementById('limitText');
   const attachBtn = document.getElementById('attachBtn');
   const attachMenu = document.getElementById('attachMenu');
   const photosInput = document.getElementById('photosInput');
@@ -610,6 +627,9 @@ HTML_INDEX = """
   const sidebarToggle = document.getElementById('sidebarToggle');
   const convoList = document.getElementById('convoList');
   const newChatBtn = document.getElementById('newChatBtn');
+  const modelSelect = document.getElementById('modelSelect');
+  const themeToggle = document.getElementById('themeToggle');
+  document.documentElement.style.setProperty('content-visibility', 'auto');
 
   const MAX_ATTACHMENTS = 5;
   const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB per file
@@ -617,6 +637,7 @@ HTML_INDEX = """
   let pendingAttachments = [];
   let readingCount = 0;
   let currentCid = null;
+  let abortController = null;
 
   function showToast(message, variant = 'default', timeout = 2200) {
     const host = document.getElementById('toasts');
@@ -648,6 +669,16 @@ HTML_INDEX = """
   }
 
   marked.setOptions({ breaks: true, gfm: true });
+  let prismLoaded = false;
+  async function ensurePrism(){
+    if (prismLoaded) return;
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js'; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+      });
+      prismLoaded = true;
+    } catch(_) {}
+  }
   function renderMarkdownToHtml(md) {
     const dirty = marked.parse(md || '');
     const clean = DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
@@ -655,7 +686,8 @@ HTML_INDEX = """
     wrapper.innerHTML = clean;
     wrapper.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
     wrapper.querySelectorAll('pre').forEach(p => p.classList.add('not-prose','rounded-lg','border','border-zinc-800'));
-    if (window.Prism && window.Prism.highlightAllUnder) { window.Prism.highlightAllUnder(wrapper); }
+    if (!prismLoaded && wrapper.querySelector('pre code')){ ensurePrism().then(()=>{ if (window.Prism && window.Prism.highlightAllUnder) { window.Prism.highlightAllUnder(wrapper); } }); }
+    else if (window.Prism && window.Prism.highlightAllUnder) { window.Prism.highlightAllUnder(wrapper); }
     return wrapper.innerHTML;
   }
 
@@ -693,7 +725,16 @@ HTML_INDEX = """
       if (tiles) inner.appendChild(tiles);
     }
     inner.innerHTML += isUser ? `<div class=\"tracking-tight\">${(content || '').replace(/</g,'&lt;')}</div>` : `<div class=\"prose prose-invert max-w-none\">${renderMarkdownToHtml(content)}</div>`;
+    if (!isUser){
+      const actions = document.createElement('div'); actions.className = 'mt-2 flex items-center gap-2';
+      const copyBtn = document.createElement('button'); copyBtn.type = 'button'; copyBtn.className = 'px-2 py-1 rounded bg-zinc-800 text-xs'; copyBtn.textContent = 'Copy answer';
+      const regenBtn = document.createElement('button'); regenBtn.type = 'button'; regenBtn.className = 'px-2 py-1 rounded bg-zinc-800 text-xs'; regenBtn.textContent = 'Regenerate';
+      copyBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(inner.innerText.trim()); showToast('Copied','success'); } catch(e){ showToast('Copy failed','error'); } });
+      regenBtn.addEventListener('click', () => { input.value = content || ''; autoResizeTextarea(input); input.focus(); });
+      actions.appendChild(copyBtn); actions.appendChild(regenBtn); inner.appendChild(actions);
+    }
     bubble.appendChild(inner);
+    bubble.style.contentVisibility = 'auto';
     row.appendChild(bubble);
     chat.appendChild(row);
     if (!isUser) attachCopyHandlers(bubble);
@@ -705,17 +746,26 @@ HTML_INDEX = """
     const row = document.createElement('div');
     row.className = 'w-full flex items-start gap-3 justify-start';
     const b = document.createElement('div');
-    b.className = 'msg rounded-2xl px-4 py-3 bg-zinc-900/70 border border-zinc-800 skeleton backdrop-blur';
-    b.innerHTML = '<div class="h-4 w-3/4 mb-2 bg-zinc-800 rounded"></div><div class="h-4 w-5/6 bg-zinc-800 rounded"></div>';
+    b.className = 'msg rounded-2xl px-4 py-3 bg-zinc-900/70 border border-zinc-800 backdrop-blur';
+    const stop = document.createElement('button');
+    stop.type = 'button';
+    stop.className = 'ml-2 text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-200';
+    stop.textContent = 'Stop';
+    stop.addEventListener('click', () => { try { abortController?.abort(); } catch(e){} });
+    b.innerHTML = '<div id="streamTarget" class="prose prose-invert max-w-none"></div>';
+    b.appendChild(stop);
     row.appendChild(b);
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
-    return row;
+    return { row, target: b.querySelector('#streamTarget') };
   }
 
   // Always dark by default; preserved for potential future toggle
   function setTheme(on){ document.documentElement.classList.toggle('dark', on); try { localStorage.setItem('theme', on ? 'dark' : 'light'); } catch(e){} }
   if (localStorage.getItem('theme') !== 'light'){ setTheme(true); }
+  themeToggle?.addEventListener('click', () => { const on = document.documentElement.classList.contains('dark'); setTheme(!on); });
+  try { const savedModel = localStorage.getItem('model'); if (savedModel) modelSelect.value = savedModel; } catch(_) {}
+  modelSelect?.addEventListener('change', () => { try { localStorage.setItem('model', modelSelect.value); } catch(_) {} });
 
   async function loadHistory(){
     const res = await fetch('/api/history');
@@ -728,10 +778,20 @@ HTML_INDEX = """
           <div class=\"text-center space-y-3\">
             <h2 class=\"text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-100\">What's on the agenda today?</h2>
             <p class=\"text-sm text-zinc-400\">Ask anything below.</p>
+            <div class=\"flex flex-wrap gap-2 justify-center mt-3\">
+              <button class=\"px-3 py-1.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-xs suggestion\">Brainstorm startup ideas</button>
+              <button class=\"px-3 py-1.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-xs suggestion\">Summarize this article</button>
+              <button class=\"px-3 py-1.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-xs suggestion\">Explain a concept simply</button>
+              <button class=\"px-3 py-1.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-xs suggestion\">Draft an email</button>
+              <button class=\"px-3 py-1.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-xs suggestion\">Write a function</button>
+            </div>
           </div>
         </div>`;
+      (chat.querySelectorAll('.suggestion')||[]).forEach(b=>{ b.addEventListener('click', () => { input.value = b.textContent; autoResizeTextarea(input); input.focus(); }); });
     } else {
       items.forEach(m => bubble(m.role, m.content));
+  try { const savedModel = localStorage.getItem('model'); if (savedModel) modelSelect.value = savedModel; } catch(_) {}
+  
     }
     if (data.left !== undefined){
       if (data.left < 0) { limitP.textContent = 'Unlimited access active'; }
@@ -740,22 +800,42 @@ HTML_INDEX = """
     attachCopyHandlers();
   }
 
-  async function loadConversations(){
+  async   function createToolbar(){
+    const toolbar = document.createElement('div');
+    toolbar.className = 'flex items-center gap-2 px-3 py-2 text-[12px] text-zinc-400';
+    const exportBtn = document.createElement('button'); exportBtn.type = 'button'; exportBtn.className = 'px-2 py-1 rounded border border-zinc-800 hover:bg-zinc-900'; exportBtn.textContent = 'Export';
+    const clearBtn = document.createElement('button'); clearBtn.type = 'button'; clearBtn.className = 'px-2 py-1 rounded border border-rose-800 text-rose-300 hover:bg-rose-900/10'; clearBtn.textContent = 'Clear all';
+    exportBtn.addEventListener('click', async () => {
+      try { const res = await fetch('/api/export'); const data = await res.json(); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aichatpal_export.json'; a.click(); URL.revokeObjectURL(url); showToast('Exported','success'); } catch(e){ showToast('Export failed','error'); }
+    });
+    clearBtn.addEventListener('click', async () => {
+      if (!confirm('Clear all conversations?')) return;
+      try { const res = await fetch('/api/clear_all', { method: 'DELETE' }); const data = await res.json(); if (!res.ok || !data.ok) throw new Error('Failed'); showToast('Cleared','success'); await loadConversations(); await loadHistory(); } catch(e){ showToast('Clear failed','error'); }
+    });
+    toolbar.appendChild(exportBtn); toolbar.appendChild(clearBtn);
+    return toolbar;
+  }
+
+  function loadConversations(){
     try {
       const res = await fetch('/api/conversations');
       const data = await res.json();
       const list = data.conversations || [];
       currentCid = data.current || currentCid;
       convoList.innerHTML = '';
+      try { convoList.setAttribute('role','listbox'); } catch(_) {}
+      convoList.appendChild(createToolbar());
       list.forEach(it => {
         const item = document.createElement('div');
         const active = it.id === currentCid;
         item.className = 'group rounded-lg px-2 py-2 flex items-center justify-between gap-2 cursor-pointer ' + (active ? 'bg-zinc-900/70 border border-zinc-800' : 'hover:bg-zinc-900/40');
+        item.setAttribute('tabindex','0'); item.setAttribute('role','option'); item.setAttribute('aria-selected', String(active));
         const left = document.createElement('div');
         left.className = 'min-w-0';
         const title = document.createElement('div');
         title.className = 'truncate text-sm ' + (active ? 'text-zinc-100' : 'text-zinc-200');
         title.textContent = it.title || 'New chat';
+        try { title.setAttribute('aria-label', `Conversation: ${title.textContent}`); } catch(_) {}
         const ts = document.createElement('div');
         ts.className = 'text-[10px] text-zinc-500';
         try { ts.textContent = new Date(it.updated_at).toLocaleString(); } catch(e) { ts.textContent = ''; }
@@ -771,6 +851,7 @@ HTML_INDEX = """
           if (it.id === currentCid) return;
           await selectConversation(it.id);
         });
+        item.addEventListener('keydown', async (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (it.id !== currentCid) await selectConversation(it.id); }});
         renameBtn.addEventListener('click', (e) => { e.stopPropagation(); startInlineRename(item, it); });
         delBtn.addEventListener('click', async (e) => { e.stopPropagation(); await deleteConversation(it.id); });
         convoList.appendChild(item);
@@ -891,6 +972,7 @@ HTML_INDEX = """
   function toggleAttachMenu(show){
     const willShow = show === undefined ? attachMenu.classList.contains('hidden') : !!show;
     attachMenu.classList.toggle('hidden', !willShow);
+    attachBtn.setAttribute('aria-expanded', String(willShow));
   }
 
   async function sendMessage(){
@@ -906,20 +988,37 @@ HTML_INDEX = """
     sendBtn.disabled = true;
     const prev = sendBtn.innerHTML;
     sendBtn.innerHTML = '<span class="opacity-80">…</span>';
-    const thinkingRow = createThinkingBubble();
+    const thinking = createThinkingBubble();
     chat.scrollTop = chat.scrollHeight;
     try{
-      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, attachments: payloadAttachments}) });
-      const data = await res.json();
-      thinkingRow.remove();
-      if (data.error){ bubble('assistant', `Error: ${data.error}`); showToast(data.error, 'error'); }
-      else {
-        bubble('assistant', data.reply || '(No response)');
-        attachCopyHandlers();
-        if (data.left !== undefined){ if (data.left < 0){ limitP.textContent = 'Unlimited access active'; } else { limitP.textContent = `Free messages left today: ${data.left}`; } }
+      abortController = new AbortController();
+      const res = await fetch('/api/chat_stream', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, attachments: payloadAttachments, model: (modelSelect?.value || undefined)}), signal: abortController.signal });
+      if (!res.ok){
+        thinking.row.remove();
+        let errText = 'Network error';
+        try { const e = await res.json(); errText = e.error || errText; } catch(_) {}
+        bubble('assistant', `Error: ${errText}`);
+        showToast(errText, 'error');
+        if (res.status === 429 || /Daily free limit/i.test(errText)){
+          try { input.disabled = true; input.placeholder = 'Daily free limit reached. Unlock unlimited to continue'; sendBtn.disabled = true; } catch(_) {}
+          try { document.getElementById('unlockDialog').showModal(); } catch(_) {}
+        }
+        return;
       }
-    }catch(e){ thinkingRow.remove(); bubble('assistant', 'Network error.'); showToast('Network error','error'); }
-    finally { sendBtn.disabled = false; sendBtn.innerHTML = prev || 'Send'; }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let acc = '';
+      while (!done){
+        const { value, done: doneRead } = await reader.read();
+        if (value){ acc += decoder.decode(value, { stream: true }); thinking.target.innerHTML = renderMarkdownToHtml(acc); chat.scrollTop = chat.scrollHeight; }
+        done = doneRead;
+      }
+      attachCopyHandlers();
+      // update left
+              try { const left = res.headers.get('x-usage-left'); if (left !== null){ const n = parseInt(left, 10); document.getElementById('limitText').textContent = (n < 0) ? 'Unlimited access active' : `Free messages left today: ${n}`; } } catch(_) {}
+    }catch(e){ thinking.row.remove(); if (e.name !== 'AbortError'){ bubble('assistant', 'Network error.'); showToast('Network error','error'); } }
+    finally { sendBtn.disabled = false; sendBtn.innerHTML = prev || 'Send'; abortController = null; input.focus(); }
   }
 
   document.getElementById('composer').addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
@@ -930,10 +1029,11 @@ HTML_INDEX = """
   // Drag & drop attachments
   ;['dragenter','dragover'].forEach(eventName => composerBox.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); composerBox.classList.add('ring-2','ring-emerald-600'); }));
   ;['dragleave','drop'].forEach(eventName => composerBox.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); composerBox.classList.remove('ring-2','ring-emerald-600'); }));
+  composerBox.addEventListener('keydown', (e) => { if (e.key === 'Escape') { toggleAttachMenu(false); } });
   composerBox.addEventListener('drop', (e) => { const dt = e.dataTransfer; if (dt && dt.files) addFiles(dt.files); });
 
   // Sidebar toggle
-  sidebarToggle?.addEventListener('click', () => { const isHidden = sidebar.classList.contains('-translate-x-full'); sidebar.classList.toggle('-translate-x-full', !isHidden); sidebar.classList.remove('hidden'); });
+  sidebarToggle?.addEventListener('click', () => { const isHidden = sidebar.classList.contains('-translate-x-full'); sidebar.classList.toggle('-translate-x-full', !isHidden); sidebar.classList.remove('hidden'); sidebarToggle.setAttribute('aria-expanded', String(!isHidden)); });
 
   // Attachments menu and actions
   attachBtn?.addEventListener('click', (e) => { e.stopPropagation(); toggleAttachMenu(); });
@@ -948,6 +1048,30 @@ HTML_INDEX = """
 
   newChatBtn?.addEventListener('click', createNewChat);
 
+  // Unlock modal logic
+  const unlockBtn = document.getElementById('unlockBtn');
+  const unlockDialog = document.getElementById('unlockDialog');
+  const unlockKey = document.getElementById('unlockKey');
+  const unlockSubmit = document.getElementById('unlockSubmit');
+  unlockBtn?.addEventListener('click', () => { try { unlockDialog.showModal(); unlockKey.focus(); } catch(_) {} });
+  unlockSubmit?.addEventListener('click', async () => {
+    const key = (unlockKey.value || '').trim();
+    if (!key) { showToast('Enter a key','error'); return; }
+    try {
+      const res = await fetch('/api/key', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key }) });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { showToast(data.error || 'Invalid key', 'error'); return; }
+      showToast('Unlimited unlocked','success');
+      limitP.textContent = 'Unlimited access active';
+      try { unlockDialog.close(); } catch(_) {}
+    } catch(e) { showToast('Activation failed','error'); }
+  });
+
+  // Optional: register service worker
+  if ('serviceWorker' in navigator) {
+    try { navigator.serviceWorker.register('/sw.js'); } catch(_) {}
+  }
+
   loadConversations();
   loadHistory();
   });
@@ -961,6 +1085,27 @@ def _create_flask_app() -> Flask:
     app = Flask(__name__)
     # Secret key for cookies
     app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev_secret_change_me")
+
+    # Compression
+    try:
+        from flask_compress import Compress  # type: ignore
+        Compress(app)
+    except Exception:
+        pass
+
+    # Security headers
+    @app.after_request
+    def add_security_headers(resp: Response) -> Response:
+        try:
+            resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+            resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+            resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+            resp.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+            # Minimal CSP allowing inline styles from Tailwind CDN artifacts safely omitted; keep relaxed for now
+            resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        except Exception:
+            pass
+        return resp
 
     def _get_or_create_user_id() -> Tuple[int, Optional[Response]]:
         uid_cookie = request.cookies.get("uid")
@@ -1057,6 +1202,42 @@ def _create_flask_app() -> Flask:
         final_resp.mimetype = "text/html"
         return final_resp
 
+    @app.get("/manifest.json")
+    def manifest() -> Response:
+        manifest = {
+            "name": "AIChatPal",
+            "short_name": "AIChatPal",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#0b0b10",
+            "theme_color": "#0c0c0f",
+            "icons": [
+                {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+            ]
+        }
+        return Response(json.dumps(manifest), mimetype="application/manifest+json")
+
+    @app.get("/sw.js")
+    def service_worker() -> Response:
+        sw = (
+            "self.addEventListener('install', e => { self.skipWaiting(); });\n"
+            "self.addEventListener('activate', e => { self.clients.claim(); });\n"
+            "self.addEventListener('fetch', e => { /* passthrough */ });\n"
+        )
+        return Response(sw, mimetype="application/javascript")
+
+    @app.get("/icon.svg")
+    def icon_svg() -> Response:
+        svg = (
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>"
+            "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#34d399'/><stop offset='100%' stop-color='#818cf8'/></linearGradient></defs>"
+            "<rect x='4' y='4' width='56' height='56' rx='14' fill='url(#g)'/>"
+            "<path d='M18 34c6 6 22 6 28 0' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/>"
+            "<circle cx='24' cy='26' r='3' fill='white'/><circle cx='40' cy='26' r='3' fill='white'/>"
+            "</svg>"
+        )
+        return Response(svg, mimetype="image/svg+xml")
+
     @app.get("/api/history")
     def api_history():
         user_id, resp = _get_or_create_user_id()
@@ -1091,6 +1272,32 @@ def _create_flask_app() -> Flask:
         combined_resp.set_data(json.dumps(payload))
         combined_resp.mimetype = "application/json"
         return combined_resp
+
+    @app.get("/api/export")
+    def api_export():
+        user_id, _ = _get_or_create_user_id()
+        try:
+            _, col_history, _, _ = _get_db_collections()
+            docs = list(col_history.find({"user_id": user_id}))
+            for d in docs:
+                d.pop("_id", None)
+            return jsonify({"ok": True, "data": docs})
+        except Exception as e:
+            _log_admin(f"DB error export: {e}")
+            return jsonify({"ok": False, "error": "DB error"}), 500
+
+    @app.delete("/api/clear_all")
+    def api_clear_all():
+        user_id, _ = _get_or_create_user_id()
+        try:
+            col_users, col_history, _, col_convos = _get_db_collections()
+            col_history.delete_many({"user_id": user_id})
+            col_convos.delete_many({"user_id": user_id})
+            col_users.update_one({"user_id": user_id}, {"$set": {"message_count": 0}}, upsert=True)
+            return jsonify({"ok": True})
+        except Exception as e:
+            _log_admin(f"DB error clear all: {e}")
+            return jsonify({"ok": False, "error": "DB error"}), 500
 
     @app.post("/api/conversations")
     def api_conversations_create():
@@ -1223,12 +1430,13 @@ def _create_flask_app() -> Flask:
         resp.delete_cookie("admin")
         return resp
 
-    @app.post("/api/chat")
-    def api_chat():
+    @app.post("/api/chat_stream")
+    def api_chat_stream():
         user_id, _ = _get_or_create_user_id()
         cid, _ = _ensure_current_conversation(user_id)
         data = request.get_json(silent=True) or {}
         text = str(data.get("message", "")).strip()
+        model_override = str(data.get("model") or "").strip() or None
         if not text and not data.get("attachments"):
             return jsonify({"error": "Empty message"}), 400
 
@@ -1276,31 +1484,76 @@ def _create_flask_app() -> Flask:
             user_content = (text + ("\n\n(Attached: " + preview + ")" if text else f"(Attached: {preview})")).strip()
         history.append({"role": "user", "content": user_content, "timestamp": now})
 
+        # Build contents and stream
         contents = _build_gemini_contents(history, latest_attachments=attachment_parts)
-        reply_text, err = _stream_gemini_response(contents)
-        if err or not reply_text:
-            err_text = err or "Unknown error"
-            return jsonify({"error": err_text, "left": _free_left(user_id)})
 
-        history.append({
-            "role": "assistant",
-            "content": reply_text,
-            "timestamp": datetime.now(timezone.utc),
-        })
-        _save_conversation_history(user_id, history, cid)
-        _update_conversation_timestamp(user_id, cid)
+        client = _get_gemini_client()
+        if client is None:
+            return jsonify({"error": "Gemini is not configured. Please set GEMINI_API_KEY."}), 503
 
-        # Auto-title if default
+        def generate():
+            text_acc = []
+            model = model_override or os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+            system_prompt = os.getenv("GEMINI_SYSTEM_PROMPT")
+            cfg = None
+            try:
+                from google.genai import types as genai_types  # type: ignore
+                thinking_cfg = None
+                try:
+                    thinking_cfg = genai_types.ThinkingConfig(budget_tokens=-1)
+                except Exception:
+                    thinking_cfg = None
+                cfg = genai_types.GenerateContentConfig(
+                    system_instruction=system_prompt if system_prompt else None,
+                    thinking_config=thinking_cfg,
+                )
+            except Exception:
+                cfg = {"system_instruction": system_prompt} if system_prompt else None
+
+            try:
+                stream = client.models.generate_content_stream(model=model, contents=contents, config=cfg)
+                for chunk in stream:
+                    try:
+                        text_piece = getattr(chunk, "text", None)
+                        if text_piece:
+                            s = str(text_piece)
+                            text_acc.append(s)
+                            yield s
+                    except Exception:
+                        pass
+                final_text = "".join(text_acc).strip() or "(No response)"
+            except Exception as e:
+                final_text = ""
+                err = f"Gemini error: {e}"
+                _log_admin(err)
+                yield f"Error: {err}"
+
+            # Save history if we have content
+            if final_text:
+                history.append({"role": "assistant", "content": final_text, "timestamp": datetime.now(timezone.utc)})
+                _save_conversation_history(user_id, history, cid)
+                _update_conversation_timestamp(user_id, cid)
+                try:
+                    _, _, _, col_convos = _get_db_collections()
+                    doc = col_convos.find_one({"user_id": user_id, "id": cid})
+                    if doc and (not doc.get("title") or doc.get("title") == "New chat"):
+                        preview = (text or user_content).strip().split("\n")[0][:50]
+                        col_convos.update_one({"user_id": user_id, "id": cid}, {"$set": {"title": preview or "New chat"}})
+                except Exception:
+                    pass
+
+        gen = generate()
+        if isinstance(gen, tuple):
+            # Early error response path
+            return gen
+        resp = Response(stream_with_context(gen), mimetype="text/plain")
+        # Return usage left in header
         try:
-            _, _, _, col_convos = _get_db_collections()
-            doc = col_convos.find_one({"user_id": user_id, "id": cid})
-            if doc and (not doc.get("title") or doc.get("title") == "New chat"):
-                preview = (text or user_content).strip().split("\n")[0][:50]
-                col_convos.update_one({"user_id": user_id, "id": cid}, {"$set": {"title": preview or "New chat"}})
+            left = _free_left(user_id)
+            resp.headers["x-usage-left"] = str(left)
         except Exception:
             pass
-
-        return jsonify({"reply": reply_text, "left": _free_left(user_id)})
+        return resp
 
     # Optional admin logs endpoint: now requires admin
     @app.get("/adminJackLogs")
@@ -1325,6 +1578,7 @@ def _create_flask_app() -> Flask:
     # Daily reset job: naive timer loop if desired (skipped; relies on external cron in prod)
 
     return app
+
 
 
 def main() -> None:

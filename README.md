@@ -73,4 +73,5 @@ ENABLE_DAILY_RESET_THREAD=1
 Notes
 - The app serves a responsive chat page at `http://localhost:8080/`.
 - Message history is stored per-browser using a secure cookie `uid` to identify a user.
-- If `GEMINI_API_KEY` is not set, `/api/chat` will return a clear error message: `Gemini is not configured. Please set GEMINI_API_KEY.`
+- If `GEMINI_API_KEY` is not set, `/api/chat_stream` will return a clear error message: `Gemini is not configured. Please set GEMINI_API_KEY.`
+- Now includes HTTP compression, basic security headers, streaming responses at `/api/chat_stream`, PWA endpoints (`/manifest.json`, `/sw.js`, `/icon.svg`), improved accessibility (ARIA labels, keyboard support), model toggle, theme toggle, export/clear endpoints, and an unlock dialog for unlimited mode.
