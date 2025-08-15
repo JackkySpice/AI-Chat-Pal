@@ -3,6 +3,9 @@ services:
     name: aichatpalbot
     env: python
     plan: free
+    headers:
+      - key: X-Forwarded-Proto
+        value: https
     buildCommand: "pip install --break-system-packages -r requirements.txt"
     startCommand: "python3 main.py"
     envVars:
